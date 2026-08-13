@@ -48,6 +48,31 @@ describe('metadata-only ingest contract', () => {
     if (!r.ok) expect(r.errors.join(' ')).toContain('not transcripts')
   })
 
+  it.each(['business_process', 'cost_center', 'agent_id'])(
+    'caps every free-text field — content cannot be smuggled through "%s"',
+    (key) => {
+      const r = validateIngestEvent({
+        ...VALID,
+        [key]: 'SYSTEM PROMPT + transcript '.repeat(200),
+      })
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.errors.join(' ')).toContain(`"${key}": max`)
+    },
+  )
+
+  it('rejects values beyond the int4 bound with a clean 422, not a DB error', () => {
+    expect(validateIngestEvent({ ...VALID, tokens: 2147483648 }).ok).toBe(false)
+    expect(validateIngestEvent({ ...VALID, tokens: 2147483647 }).ok).toBe(true)
+    expect(validateIngestEvent({ ...VALID, duration_sec: 3000000000 }).ok).toBe(false)
+  })
+
+  it('rejects calendar-invalid and offset-less timestamps', () => {
+    for (const bad of ['2026-02-30T10:00:00Z', '2026-08-14T09:00:00', '2026-08-14 09:00:00Z']) {
+      expect(validateIngestEvent({ ...VALID, timestamp: bad }).ok, bad).toBe(false)
+    }
+    expect(validateIngestEvent({ ...VALID, timestamp: '2026-08-14T09:00:00+05:00' }).ok).toBe(true)
+  })
+
   it.each([
     [{ ...VALID, outcome: 'done' }, 'outcome'],
     [{ ...VALID, duration_sec: -5 }, 'duration_sec'],

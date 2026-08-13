@@ -34,16 +34,42 @@ export function DataProvider({
   children: ReactNode
 }) {
   const [dataSet, setDataSet] = useState<DataSet | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let mounted = true
-    source.load().then((ds) => {
-      if (mounted) setDataSet(ds)
-    })
+    setError(null)
+    source.load().then(
+      (ds) => {
+        if (mounted) setDataSet(ds)
+      },
+      // A rejected load must surface, not leave the app on the spinner forever.
+      (err: unknown) => {
+        if (mounted) setError(err instanceof Error ? err.message : String(err))
+      },
+    )
     return () => {
       mounted = false
     }
-  }, [source])
+  }, [source, attempt])
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm">
+          <div className="text-base font-semibold text-slate-900">Couldn&apos;t load the workspace</div>
+          <p className="mt-2 break-words text-sm text-slate-600">{error}</p>
+          <button
+            onClick={() => setAttempt((n) => n + 1)}
+            className="mt-4 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!dataSet) {
     return (

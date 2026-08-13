@@ -47,7 +47,8 @@ Deno.serve(async (req: Request) => {
     org_id: orgId,
     id,
     agent_id: event.agent_id,
-    timestamp: event.timestamp ?? new Date().toISOString(),
+    // Store the normalized instant the validator blessed, never the raw string.
+    timestamp: new Date(event.timestamp ?? Date.now()).toISOString(),
     description: event.description,
     business_process: event.business_process,
     cost_center: event.cost_center,

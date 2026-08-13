@@ -14,7 +14,11 @@ export default function LoginScreen() {
       const supabase = await getSupabaseClient()
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin + import.meta.env.BASE_URL },
+        options: {
+          emailRedirectTo: window.location.origin + import.meta.env.BASE_URL,
+          // Access is grant-based: signing in never creates an account.
+          shouldCreateUser: false,
+        },
       })
       if (error) throw error
       setState('sent')

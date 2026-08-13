@@ -72,12 +72,39 @@ const CONTENT_KEYS = new Set([
   'tool_output',
 ])
 
-const MAX_DESCRIPTION_LENGTH = 300
+/**
+ * Every free-text field is length-capped — a "cost center" long enough to hold
+ * a transcript is not a cost center. Caps on ALL string fields are what make
+ * content smuggling impractical, not just the blocklist.
+ */
+const MAX_LENGTHS: Record<(typeof REQUIRED_STRINGS)[number], number> = {
+  agent_id: 100,
+  description: 300,
+  business_process: 120,
+  cost_center: 120,
+}
+
+/** Postgres int4 bound — values beyond it must 422 here, not 500 at insert. */
+const INT4_MAX = 2147483647
 
 const isNonNegativeNumber = (v: unknown): v is number =>
   typeof v === 'number' && Number.isFinite(v) && v >= 0
 
-const isNonNegativeInt = (v: unknown): v is number => isNonNegativeNumber(v) && Number.isInteger(v)
+const isNonNegativeInt = (v: unknown): v is number =>
+  isNonNegativeNumber(v) && Number.isInteger(v) && v <= INT4_MAX
+
+const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
+
+/** Strict ISO 8601 with explicit offset; calendar-invalid dates rejected. */
+const isValidTimestamp = (t: string): boolean => {
+  if (!TIMESTAMP_RE.test(t)) return false
+  if (Number.isNaN(new Date(t).getTime())) return false
+  const [y, m, d] = t.slice(0, 10).split('-').map(Number)
+  const check = new Date(Date.UTC(y, m - 1, d))
+  return (
+    check.getUTCFullYear() === y && check.getUTCMonth() === m - 1 && check.getUTCDate() === d
+  )
+}
 
 export function validateIngestEvent(payload: unknown): ValidationResult {
   if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
@@ -101,16 +128,13 @@ export function validateIngestEvent(payload: unknown): ValidationResult {
     const v = obj[key]
     if (typeof v !== 'string' || v.trim() === '') {
       errors.push(`"${key}": required non-empty string`)
+    } else if (v.length > MAX_LENGTHS[key]) {
+      errors.push(
+        key === 'description'
+          ? `"description": max ${MAX_LENGTHS.description} characters — descriptions are business summaries, not transcripts`
+          : `"${key}": max ${MAX_LENGTHS[key]} characters — business labels, not free text`,
+      )
     }
-  }
-
-  if (
-    typeof obj.description === 'string' &&
-    obj.description.length > MAX_DESCRIPTION_LENGTH
-  ) {
-    errors.push(
-      `"description": max ${MAX_DESCRIPTION_LENGTH} characters — descriptions are business summaries, not transcripts`,
-    )
   }
 
   if (!OUTCOMES.includes(obj.outcome as (typeof OUTCOMES)[number])) {
@@ -121,8 +145,8 @@ export function validateIngestEvent(payload: unknown): ValidationResult {
   if (!isNonNegativeInt(obj.units)) errors.push('"units": non-negative integer')
 
   if (obj.timestamp !== undefined) {
-    if (typeof obj.timestamp !== 'string' || Number.isNaN(new Date(obj.timestamp).getTime())) {
-      errors.push('"timestamp": ISO 8601 datetime string')
+    if (typeof obj.timestamp !== 'string' || !isValidTimestamp(obj.timestamp)) {
+      errors.push('"timestamp": ISO 8601 datetime string with explicit timezone (e.g. 2026-08-14T09:00:00Z)')
     }
   }
   if (obj.tokens !== undefined && !isNonNegativeInt(obj.tokens)) {

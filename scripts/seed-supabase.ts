@@ -1,6 +1,7 @@
 /**
- * Load the demo dataset into Supabase. Idempotent: fixed org id + upserts, so
- * rerunning changes nothing unless the data changed.
+ * Load the demo dataset into Supabase. Idempotent for the same anchor; when
+ * the anchor moves, stale generator rows from the previous window are
+ * garbage-collected automatically (rows ingested via the API are preserved).
  *
  * Usage:
  *   npm run seed:supabase                       # anchored to today
@@ -68,6 +69,39 @@ async function resetOrg() {
   }
 }
 
+/**
+ * Delete generator-produced rows that are no longer part of the current
+ * dataset (a reseed with a different --asof shifts the window, stranding old
+ * rows that would silently corrupt every aggregate). Only ids matching the
+ * generator's namespace are touched, so API-ingested rows survive.
+ */
+async function gcStale(table: string, keepIds: Set<string>, generatorId: RegExp) {
+  // Paged read — supabase-js caps responses at 1000 rows.
+  const ids: string[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('id')
+      .eq('org_id', DEMO_ORG_ID)
+      .order('id')
+      .range(from, from + 999)
+    if (error) throw new Error(`gc select ${table}: ${error.message}`)
+    ids.push(...(data ?? []).map((r) => r.id as string))
+    if (!data || data.length < 1000) break
+  }
+  const stale = ids.filter((id) => generatorId.test(id) && !keepIds.has(id))
+  for (let i = 0; i < stale.length; i += 200) {
+    const chunk = stale.slice(i, i + 200)
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq('org_id', DEMO_ORG_ID)
+      .in('id', chunk)
+    if (error) throw new Error(`gc delete ${table}: ${error.message}`)
+  }
+  if (stale.length > 0) console.log(`  ${table}: removed ${stale.length} stale rows`)
+}
+
 async function grantMembership(email: string) {
   const { data, error } = await supabase.auth.admin.listUsers()
   if (error) throw new Error(`listUsers: ${error.message}`)
@@ -111,6 +145,11 @@ async function main() {
   await upsertChunked('tasks', rows.tasks, 'org_id,id')
   await upsertChunked('deviations', rows.deviations, 'org_id,id')
   await upsertChunked('approvals', rows.approvals, 'org_id,id')
+
+  // Children first, then tasks; API-ingested rows (task-ing-*) are preserved.
+  await gcStale('approvals', new Set(rows.approvals.map((r) => r.id)), /^app-\d+$/)
+  await gcStale('deviations', new Set(rows.deviations.map((r) => r.id)), /^dev-\d+$/)
+  await gcStale('tasks', new Set(rows.tasks.map((r) => r.id)), /^t-/)
 
   if (grantEmail) await grantMembership(grantEmail)
 

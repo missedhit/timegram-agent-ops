@@ -27,15 +27,20 @@ import {
  */
 const PAGE = 1000
 
-async function fetchAll<T>(table: string): Promise<T[]> {
+/**
+ * Paged reads MUST have a total, stable ordering — .range() without .order()
+ * lets Postgres return rows in any order per page, silently duplicating or
+ * dropping rows across page boundaries. Ordering by the primary key (org_id
+ * is pinned by the filter) also means rows inserted mid-load by the ingest
+ * endpoint land after the cursor instead of shifting it.
+ */
+async function fetchAll<T>(table: string, orderCols: string[]): Promise<T[]> {
   const supabase = await getSupabaseClient()
   const rows: T[] = []
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from(table)
-      .select('*')
-      .eq('org_id', DEMO_ORG_ID)
-      .range(from, from + PAGE - 1)
+    let query = supabase.from(table).select('*').eq('org_id', DEMO_ORG_ID)
+    for (const col of orderCols) query = query.order(col)
+    const { data, error } = await query.range(from, from + PAGE - 1)
     if (error) throw new Error(`Failed to load ${table}: ${error.message}`)
     rows.push(...(data as T[]))
     if (!data || data.length < PAGE) return rows
@@ -46,13 +51,13 @@ export const supabaseDataSource: DataSource = {
   async load(): Promise<DataSet> {
     const [agents, agentVersions, policies, agentPolicies, tasks, deviations, approvals] =
       await Promise.all([
-        fetchAll<AgentRow>('agents'),
-        fetchAll<AgentVersionRow>('agent_versions'),
-        fetchAll<PolicyRow>('policies'),
-        fetchAll<AgentPolicyRow>('agent_policies'),
-        fetchAll<TaskRow>('tasks'),
-        fetchAll<DeviationRow>('deviations'),
-        fetchAll<ApprovalRow>('approvals'),
+        fetchAll<AgentRow>('agents', ['id']),
+        fetchAll<AgentVersionRow>('agent_versions', ['agent_id', 'version']),
+        fetchAll<PolicyRow>('policies', ['id']),
+        fetchAll<AgentPolicyRow>('agent_policies', ['agent_id', 'policy_id']),
+        fetchAll<TaskRow>('tasks', ['id']),
+        fetchAll<DeviationRow>('deviations', ['id']),
+        fetchAll<ApprovalRow>('approvals', ['id']),
       ])
     const rows: DataSetRows = {
       agents,
