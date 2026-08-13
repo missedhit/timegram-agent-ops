@@ -16,7 +16,7 @@ import { createClient } from '@supabase/supabase-js'
 import { buildDataSet } from '../src/data/seed/generate'
 import { DEMO_ORG_ID, DEMO_ORG_NAME, toRows } from '../src/data/supabase/mappers'
 // @ts-expect-error plain-JS helper without type declarations
-import { loadEnvLocal } from './check-supabase.mjs'
+import { loadEnvLocal } from './env.mjs'
 
 const env = loadEnvLocal() as Record<string, string>
 const url = env.VITE_SUPABASE_URL

@@ -7,6 +7,8 @@ export default defineConfig({
   server: { port: 5173, strictPort: true },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // The ingest contract is shared with the Deno edge runtime; only the pure
+    // contract test runs here (index.ts uses Deno globals and stays out).
+    include: ['src/**/*.test.ts', 'supabase/functions/**/contract.test.ts'],
   },
 })
