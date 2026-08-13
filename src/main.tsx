@@ -4,12 +4,16 @@ import { BrowserRouter } from 'react-router-dom'
 import '@fontsource-variable/inter'
 import './index.css'
 import App from './App'
-import { DataProvider } from './data/DataContext'
+import { DataProvider, seedDataSource } from './data/DataContext'
+import { dataMode } from './data/dataMode'
+import { supabaseDataSource } from './data/supabase/SupabaseDataSource'
+
+const source = dataMode === 'supabase' ? supabaseDataSource : seedDataSource
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <DataProvider>
+      <DataProvider source={source}>
         <App />
       </DataProvider>
     </BrowserRouter>

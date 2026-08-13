@@ -1,5 +1,6 @@
 import { EyeOff } from 'lucide-react'
 import { useData } from '../../data/DataContext'
+import { dataMode } from '../../data/dataMode'
 import { fmtDate } from '../../lib/format'
 
 export default function Header() {
@@ -11,6 +12,20 @@ export default function Header() {
         <span className="text-sm font-semibold text-slate-900">Northbridge Mutual</span>
         <span className="text-xs text-slate-500">
           Activity window: {fmtDate(ds.rangeStart)} – {fmtDate(ds.rangeEnd)}
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+            dataMode === 'supabase'
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'bg-slate-100 text-slate-500'
+          }`}
+          title={
+            dataMode === 'supabase'
+              ? 'Reading from the live database'
+              : 'Reading from the built-in demo dataset'
+          }
+        >
+          {dataMode === 'supabase' ? 'Live data' : 'Demo data'}
         </span>
       </div>
       <div
