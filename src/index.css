@@ -1,0 +1,81 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+/**
+ * Print rules for the audit evidence pack. Chrome's "Save as PDF" on the
+ * Audit Export screen should produce a clean document: no app chrome, full
+ * page width, and sections that don't split across page breaks.
+ */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  /* Drop the app shell so the document starts at the top of page 1. */
+  .app-sidebar,
+  .app-header {
+    display: none !important;
+  }
+
+  .app-body {
+    padding-left: 0 !important;
+  }
+
+  .app-main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .evidence-pack {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .evidence-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /*
+   * Protect headings and rows rather than whole sections — blanket
+   * break-inside:avoid on long table sections pushes them wholesale onto the
+   * next page and leaves half-empty pages.
+   */
+  .evidence-pack > header,
+  .evidence-pack > footer {
+    break-inside: avoid;
+  }
+
+  /* The Section heading block: never leave a title stranded at a page foot. */
+  .evidence-section > div:first-child {
+    break-inside: avoid;
+    break-after: avoid;
+  }
+
+  .evidence-section thead {
+    display: table-header-group;
+  }
+
+  .evidence-section tr {
+    break-inside: avoid;
+  }
+
+  /* Keep badge and panel tints in the printed output. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

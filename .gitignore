@@ -1,0 +1,10 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# Secrets — never commit environment files (the example is the only exception)
+.env
+.env.*
+!.env.example
+supabase/.env
