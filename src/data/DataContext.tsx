@@ -8,6 +8,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { DataSet } from '../domain/types'
+import { resolveAnchor } from './anchor'
 import { buildDataSet } from './seed/generate'
 
 export interface DataSource {
@@ -15,7 +16,10 @@ export interface DataSource {
 }
 
 export const seedDataSource: DataSource = {
-  load: () => Promise.resolve(buildDataSet()),
+  load: () =>
+    Promise.resolve(
+      buildDataSet(resolveAnchor(window.location.search, import.meta.env.VITE_DEMO_ANCHOR)),
+    ),
 }
 
 const DataContext = createContext<DataSet | null>(null)

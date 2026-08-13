@@ -17,6 +17,14 @@ npm run dev
 
 Then open http://localhost:5173.
 
+**Live demo:** https://missedhit.github.io/timegram-agent-ops/ — deployed
+automatically from `main` by GitHub Actions.
+
+**Pinning the numbers for a pitch:** append `?asof=YYYY-MM-DD` to any URL
+(e.g. `…/costs?asof=2026-08-01`) and the whole dataset anchors to that date —
+useful when a screenshotted deck and a live demo need to agree. Without it,
+data always covers the 90 days ending yesterday.
+
 Other scripts: `npm test` (data consistency + narrative tests), `npm run build`
 (typecheck + production build), `npm run lint`.
 
