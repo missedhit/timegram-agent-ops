@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest'
+import { fmtDate, fmtDateShort, fmtDateTime, fmtDateTimeFull } from '../lib/format'
 import { resolveAnchor } from './anchor'
+
+describe('date formatting never throws (regression: blank screen on empty dataset)', () => {
+  it.each(['', 'not-a-date', undefined as unknown as string])(
+    'renders a placeholder for invalid input %j',
+    (bad) => {
+      // Intl.format on an Invalid Date throws and unmounts the React tree;
+      // every formatter must degrade to a placeholder instead.
+      expect(fmtDate(bad ?? '')).toBe('—')
+      expect(fmtDateShort(bad ?? '')).toBe('—')
+      expect(fmtDateTime(bad ?? '')).toBe('—')
+      expect(fmtDateTimeFull(bad ?? '')).toBe('—')
+    },
+  )
+})
 
 describe('resolveAnchor', () => {
   it('uses a valid ?asof= param as a local calendar date', () => {

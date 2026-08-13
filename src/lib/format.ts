@@ -57,17 +57,27 @@ const dateTimeFmt = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 })
 
+/**
+ * Formatting an invalid/empty date must render a placeholder, never throw —
+ * Intl.format on an Invalid Date throws a RangeError, which unmounts the whole
+ * React tree (a blank screen) if any row of an empty dataset reaches it.
+ */
+const safeFormat = (fmt: Intl.DateTimeFormat, iso: string) => {
+  const d = parseIso(iso)
+  return Number.isNaN(d.getTime()) ? '—' : fmt.format(d)
+}
+
 /** "Aug 12, 2026" */
-export const fmtDate = (iso: string) => dateFmt.format(parseIso(iso))
+export const fmtDate = (iso: string) => safeFormat(dateFmt, iso)
 
 /** "Aug 12" */
-export const fmtDateShort = (iso: string) => dateShortFmt.format(parseIso(iso))
+export const fmtDateShort = (iso: string) => safeFormat(dateShortFmt, iso)
 
 /** "Aug 12, 3:41 PM" */
-export const fmtDateTime = (iso: string) => dateTimeFmt.format(parseIso(iso))
+export const fmtDateTime = (iso: string) => safeFormat(dateTimeFmt, iso)
 
 /** "Aug 12, 2026, 3:41 PM" — for document provenance stamps, which need the year. */
-export const fmtDateTimeFull = (iso: string) => dateTimeFullFmt.format(parseIso(iso))
+export const fmtDateTimeFull = (iso: string) => safeFormat(dateTimeFullFmt, iso)
 
 /** "12m 40s" / "1h 05m" / "38s" */
 export function fmtDuration(totalSec: number): string {
