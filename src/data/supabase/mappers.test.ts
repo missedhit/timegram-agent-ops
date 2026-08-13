@@ -55,6 +55,30 @@ describe('supabase row mappers', () => {
     expect(roundTripped.rangeEnd).toBe(original.rangeEnd)
   })
 
+  it('a workspace with agents but no tasks yields a valid one-day window (regression: blank screen / infinite loop)', async () => {
+    const rows = toRows(original)
+    const emptyRows = { ...rows, tasks: [], deviations: [], approvals: [] }
+    const ds = fromRows(emptyRows, original.generatedAt)
+    // Window must be a real calendar day, never ''.
+    expect(ds.rangeStart).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(ds.rangeEnd).toBe(ds.rangeStart)
+
+    const { dailySeries, last30Days, registrySummary } = await import('../selectors')
+    const { setOrgTimeZone } = await import('../../lib/orgTime')
+    // Local mode: dailySeries must terminate and produce zero-filled days.
+    const series = dailySeries(ds, last30Days(ds))
+    expect(series).toHaveLength(30)
+    expect(series.every((p) => p.tasks === 0)).toBe(true)
+    // Org-timezone mode (live): no RangeError from any headline selector.
+    setOrgTimeZone('America/New_York')
+    try {
+      expect(registrySummary(ds).spend30dUsd).toBe(0)
+      expect(dailySeries(ds, last30Days(ds))).toHaveLength(30)
+    } finally {
+      setOrgTimeZone('local')
+    }
+  })
+
   it('round-trips optional fields (paused/retired agents, unresolved deviations)', () => {
     const paused = roundTripped.agents.find((a) => a.status === 'paused')
     expect(paused?.pausedAt).toBeDefined()

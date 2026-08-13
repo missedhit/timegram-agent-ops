@@ -307,6 +307,45 @@ describe('policy alert text agrees with the spend it describes', () => {
   })
 })
 
+describe('guardrail alert text stays truthful when seeding for an org timezone', () => {
+  it('breach amounts match Eastern day totals when generated under America/New_York', async () => {
+    const { addCalendarDays, dayOf, setOrgTimeZone } = await import('../lib/orgTime')
+    // The live seeder generates under the org timezone (scripts/seed-supabase.ts
+    // does exactly this); the invariant must hold for the buckets viewers see.
+    setOrgTimeZone('America/New_York')
+    try {
+      const nyDs = buildDataSet(new Date(2026, 7, 14))
+      const alerts = nyDs.deviations.filter((d) => d.policyId === 'pol-cost-guardrail')
+      expect(alerts.length).toBeGreaterThan(0)
+
+      for (const d of alerts) {
+        const claimed = d.description.match(/\$([\d,]+) — ([\d.]+)×/)
+        expect(claimed, d.description).not.toBeNull()
+        const claimedCost = Number(claimed![1].replace(/,/g, ''))
+
+        const day = dayOf(d.timestamp)
+        const dayTotal = sumCost(
+          nyDs.tasks.filter((t) => t.agentId === d.agentId && dayOf(t.timestamp) === day),
+        )
+        expect(claimedCost, `${d.id} on ${day}`).toBe(Math.round(dayTotal))
+
+        // And it genuinely breaches the stated threshold against the trailing
+        // 30 Eastern days.
+        let trailing = 0
+        for (let k = 1; k <= 30; k++) {
+          const prior = addCalendarDays(day, -k)
+          trailing += sumCost(
+            nyDs.tasks.filter((t) => t.agentId === d.agentId && dayOf(t.timestamp) === prior),
+          )
+        }
+        expect(dayTotal / (trailing / 30), `${d.id} ratio`).toBeGreaterThanOrEqual(1.4)
+      }
+    } finally {
+      setOrgTimeZone('local')
+    }
+  })
+})
+
 describe('selectors stay internally consistent under an org business timezone', () => {
   it('charts, KPIs, and evidence packs still agree when bucketing in America/New_York', async () => {
     const { setOrgTimeZone } = await import('../lib/orgTime')

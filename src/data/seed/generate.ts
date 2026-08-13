@@ -16,6 +16,7 @@ import type {
   TaskOutcome,
   WorkTask,
 } from '../../domain/types'
+import { dayOf } from '../../lib/orgTime'
 import {
   AGENT_FIXTURES,
   APPROVAL_TEMPLATES,
@@ -298,7 +299,11 @@ function guardrailBreaches(
   const totals = new Map<string, number>()
   for (const t of tasks) {
     if (t.agentId !== agentId) continue
-    const key = isoDate(new Date(t.timestamp))
+    // Bucket in ORG time (viewer-local in seed mode, the org's business
+    // timezone when the seed script targets the live DB) so the dollar
+    // amounts baked into alert text always match the day totals the cost
+    // charts will show.
+    const key = dayOf(t.timestamp)
     totals.set(key, (totals.get(key) ?? 0) + t.costUsd)
   }
   const costOn = (daysAgo: number) => totals.get(daysAgoToIsoDate(anchor, daysAgo)) ?? 0

@@ -365,9 +365,14 @@ export function fromRows(rows: DataSetRows, generatedAt: string): DataSet {
     .sort(byTimestampThenId)
 
   // The activity window is derived from the data itself (org-time calendar days).
+  // A workspace with agents but no activity yet must still yield a valid
+  // one-day window: '' here cascades into a RangeError blank screen (org-tz
+  // mode) or an infinite dailySeries loop (local mode).
   const taskDays = tasks.map((t) => dayOf(t.timestamp))
-  const rangeStart = taskDays.length > 0 ? taskDays.reduce((a, b) => (a < b ? a : b)) : ''
-  const rangeEnd = taskDays.length > 0 ? taskDays.reduce((a, b) => (a > b ? a : b)) : ''
+  const fallbackDay = dayOf(generatedAt)
+  const rangeStart =
+    taskDays.length > 0 ? taskDays.reduce((a, b) => (a < b ? a : b)) : fallbackDay
+  const rangeEnd = taskDays.length > 0 ? taskDays.reduce((a, b) => (a > b ? a : b)) : fallbackDay
 
   return {
     generatedAt,

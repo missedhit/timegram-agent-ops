@@ -49,6 +49,24 @@ describe('org timezone day math (America/New_York)', () => {
     }
   })
 
+  it('handles timezones whose spring-forward gap starts at midnight', () => {
+    // In these zones 00:00 does not exist on the transition day — the day
+    // starts at 01:00. dayBounds must return the first EXISTING instant, keep
+    // the day partition contiguous, and never land on the previous day.
+    for (const [tz, gapDay] of [
+      ['America/Santiago', '2026-09-06'],
+      ['America/Havana', '2026-03-08'],
+    ] as const) {
+      const b = dayBounds(gapDay, tz)
+      expect(dayOf(b.from, tz), `${tz} from-day`).toBe(gapDay)
+      expect(dayOf(b.from - 1, tz), `${tz} instant before`).toBe(addCalendarDays(gapDay, -1))
+      expect(dayOf(b.to, tz), `${tz} to-day`).toBe(gapDay)
+      // 23-hour day, and contiguous with its neighbor.
+      expect(b.to - b.from + 1, `${tz} length`).toBe(23 * HOUR)
+      expect(dayBounds(addCalendarDays(gapDay, -1), tz).to + 1, `${tz} continuity`).toBe(b.from)
+    }
+  })
+
   it('addCalendarDays handles month and year wraps', () => {
     expect(addCalendarDays('2026-08-31', 1)).toBe('2026-09-01')
     expect(addCalendarDays('2026-01-01', -1)).toBe('2025-12-31')

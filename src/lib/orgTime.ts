@@ -90,15 +90,30 @@ function startOfDayEpoch(dateOnly: string, tz: OrgTimeZone): number {
   if (tz === 'local') {
     return new Date(y, m - 1, d).getTime()
   }
-  // Two-pass wall-clock alignment: converge on the instant whose wall clock in
-  // `tz` reads midnight of the requested date.
-  let guess = Date.UTC(y, m - 1, d)
-  for (let i = 0; i < 2; i++) {
+  // Wall-clock alignment: converge on the instant whose wall clock in `tz`
+  // reads midnight of the requested date.
+  const desired = Date.UTC(y, m - 1, d)
+  let guess = desired
+  for (let i = 0; i < 4; i++) {
     const f = fieldsIn(tz, guess)
     const wallAsUtc = Date.UTC(f.y, f.m - 1, f.d, f.h, f.min, f.s)
-    guess += Date.UTC(y, m - 1, d) - wallAsUtc
+    const diff = desired - wallAsUtc
+    if (diff === 0) return guess
+    guess += diff
   }
-  return guess
+  // No fixed point: midnight falls inside a spring-forward gap (timezones
+  // like America/Santiago or America/Havana shift at 00:00, so the day
+  // starts at 01:00). The iteration oscillates around the transition —
+  // binary-search the first instant whose wall-clock calendar date is the
+  // requested day. dayOf is monotonic in the epoch, so this is exact.
+  let lo = desired - 48 * 3600_000 // wall date certainly before dateOnly
+  let hi = desired + 48 * 3600_000 // wall date certainly on/after dateOnly
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (dayOf(mid, tz) < dateOnly) lo = mid
+    else hi = mid
+  }
+  return hi
 }
 
 /** Pure calendar arithmetic on 'YYYY-MM-DD' strings (timezone-free). */

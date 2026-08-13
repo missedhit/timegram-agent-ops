@@ -1,8 +1,9 @@
 # PoC environment — working plan (resume here)
 
 > This is the live working plan, committed so any session on any device can pick
-> it up. Last updated 2026-08-14. Nothing in this plan has been implemented yet —
-> **start at M0.**
+> it up. Last updated 2026-08-14 (later session). **M0 is DONE** (all three
+> review findings fixed, tested, live org reseeded with Eastern-truthful
+> guardrail amounts). **Next action: M1.**
 
 ## Where things stand right now
 
@@ -12,12 +13,12 @@
 | Live app | Works on `localhost:5173` only, single hard-wired org. **Not yet hosted.** |
 | Supabase | Project `eaeqqipehxxaypvzdxcv`: schema + RLS + magic-link auth + ingest function, all live |
 | Connectors | TypeScript SDK in `connector/` (works end-to-end); Python not started |
-| Tests | 93 green (`npm test`), CI on every push |
-| Repo | Clean, everything pushed, last commit `dd3ec9c` |
+| Tests | 96 green (`npm test`), CI on every push |
+| M0 | ✅ Done — empty-workspace crash, DST-gap convergence, guardrail bucketing all fixed + regression-tested; live org reseeded |
 
-**Next action: M0** (three review-confirmed bugs found by the adversarial review of
-the org-timezone change — fix these before anything else, they'd hit the first
-real prospect).
+**Next action: M1** (multi-tenant app — OrgProvider, free-form departments,
+empty-org UX). M0's review is folded into the M1 adversarial review since M0's
+fixes were themselves produced and empirically validated by a review.
 
 ## Resuming from another device (phone, web, another laptop)
 

@@ -14,8 +14,15 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { LIVE_ORG_TIMEZONE, setOrgTimeZone } from '../src/lib/orgTime'
 import { buildDataSet } from '../src/data/seed/generate'
 import { DEMO_ORG_ID, DEMO_ORG_NAME, toRows } from '../src/data/supabase/mappers'
+
+// The live workspace buckets days in the org business timezone; generate the
+// narrative breach amounts in the same timezone so alert text matches the
+// charts every viewer sees. (Do NOT use a TZ env var — Node on Windows
+// ignores IANA TZ values.)
+setOrgTimeZone(LIVE_ORG_TIMEZONE)
 // @ts-expect-error plain-JS helper without type declarations
 import { loadEnvLocal } from './env.mjs'
 
