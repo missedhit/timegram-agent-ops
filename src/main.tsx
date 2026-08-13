@@ -8,8 +8,13 @@ import AuthGate from './auth/AuthGate'
 import { DataProvider, seedDataSource } from './data/DataContext'
 import { dataMode } from './data/dataMode'
 import { supabaseDataSource } from './data/supabase/SupabaseDataSource'
+import { LIVE_ORG_TIMEZONE, setOrgTimeZone } from './lib/orgTime'
 
 const source = dataMode === 'supabase' ? supabaseDataSource : seedDataSource
+
+// Live workspaces report in the org's business timezone so every member sees
+// identical numbers; the seed demo stays viewer-local so it is always fresh.
+setOrgTimeZone(dataMode === 'supabase' ? LIVE_ORG_TIMEZONE : 'local')
 
 const app = (
   <BrowserRouter basename={import.meta.env.BASE_URL}>

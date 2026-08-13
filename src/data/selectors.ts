@@ -7,6 +7,7 @@
  * unit-testable and portable to a future backend.
  */
 
+import { addCalendarDays, dayBounds, dayOf, monthOf } from '../lib/orgTime'
 import type {
   Agent,
   AgentVersion,
@@ -48,25 +49,19 @@ export function toIsoDate(d: Date): string {
 
 /** End of the dataset window as an inclusive [from, to] range of the last N days. */
 export function lastNDays(ds: DataSet, n: number): DateRange {
-  const end = parseLocalDate(ds.rangeEnd)
-  end.setHours(23, 59, 59, 999)
-  const start = parseLocalDate(ds.rangeEnd)
-  // Calendar-day stepping, not n×24h — fixed-hour math drifts across DST.
-  start.setDate(start.getDate() - (n - 1))
-  start.setHours(0, 0, 0, 0)
-  return { from: start.getTime(), to: end.getTime() }
+  // Calendar-day stepping in org time, not n×24h — DST-safe by construction.
+  return {
+    from: dayBounds(addCalendarDays(ds.rangeEnd, -(n - 1))).from,
+    to: dayBounds(ds.rangeEnd).to,
+  }
 }
 
 export const last30Days = (ds: DataSet): DateRange => lastNDays(ds, 30)
 export const last90Days = (ds: DataSet): DateRange => lastNDays(ds, 90)
 
-/** Inclusive range from two date-only strings ('YYYY-MM-DD'), local time. */
+/** Inclusive range from two date-only strings ('YYYY-MM-DD'), in org time. */
 export function rangeFromDates(startIso: string, endIso: string): DateRange {
-  const start = parseLocalDate(startIso)
-  start.setHours(0, 0, 0, 0)
-  const end = parseLocalDate(endIso)
-  end.setHours(23, 59, 59, 999)
-  return { from: start.getTime(), to: end.getTime() }
+  return { from: dayBounds(startIso).from, to: dayBounds(endIso).to }
 }
 
 export const inRange = (iso: string, range: DateRange): boolean => {
@@ -198,18 +193,13 @@ export interface DeviationMonthMatrix {
   rows: Array<{ agentId: string; counts: Record<string, number>; total: number }>
 }
 
-const monthKey = (iso: string) => {
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
-
 /** Deviation counts per agent per calendar month, agents sorted worst-first. */
 export function deviationsByAgentMonth(ds: DataSet): DeviationMonthMatrix {
-  const months = [...new Set(ds.deviations.map((d) => monthKey(d.timestamp)))].sort()
+  const months = [...new Set(ds.deviations.map((d) => monthOf(d.timestamp)))].sort()
   const byAgent = new Map<string, Record<string, number>>()
   for (const d of ds.deviations) {
     const counts = byAgent.get(d.agentId) ?? {}
-    const key = monthKey(d.timestamp)
+    const key = monthOf(d.timestamp)
     counts[key] = (counts[key] ?? 0) + 1
     byAgent.set(d.agentId, counts)
   }
@@ -241,16 +231,14 @@ export interface DailyPoint {
  */
 export function dailySeries(ds: DataSet, range: DateRange, agentId?: string): DailyPoint[] {
   const byDate = new Map<string, DailyPoint>()
-  const cursor = new Date(range.from)
-  while (cursor.getTime() <= range.to) {
-    const key = toIsoDate(cursor)
-    byDate.set(key, { date: key, tasks: 0, costUsd: 0 })
-    cursor.setDate(cursor.getDate() + 1)
+  const lastDay = dayOf(range.to)
+  for (let day = dayOf(range.from); day <= lastDay; day = addCalendarDays(day, 1)) {
+    byDate.set(day, { date: day, tasks: 0, costUsd: 0 })
   }
   for (const t of ds.tasks) {
     if (agentId && t.agentId !== agentId) continue
     if (!inRange(t.timestamp, range)) continue
-    const point = byDate.get(toIsoDate(new Date(t.timestamp)))
+    const point = byDate.get(dayOf(t.timestamp))
     if (!point) continue
     point.tasks += 1
     point.costUsd += t.costUsd
@@ -391,8 +379,8 @@ export function evidencePack(ds: DataSet, agentId: string, range: DateRange): Ev
     byProcess.set(t.businessProcess, row)
   }
 
-  const periodStart = toIsoDate(new Date(range.from))
-  const periodEnd = toIsoDate(new Date(range.to))
+  const periodStart = dayOf(range.from)
+  const periodEnd = dayOf(range.to)
 
   return {
     agent,
@@ -424,7 +412,12 @@ export function evidencePack(ds: DataSet, agentId: string, range: DateRange): Ev
       }))
       .sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom)),
     configChanges: agent.versionHistory
-      .filter((v) => inRange(`${v.date}T12:00:00`, range))
+      // A version "took effect inside the period" if the middle of its
+      // effective day (org time) falls in the range.
+      .filter((v) => {
+        const mid = dayBounds(v.date).from + 12 * 3600_000
+        return mid >= range.from && mid <= range.to
+      })
       .slice()
       .reverse(),
   }

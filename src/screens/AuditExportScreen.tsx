@@ -4,7 +4,8 @@ import FilterSelect from '../components/ui/FilterSelect'
 import PageHeader from '../components/ui/PageHeader'
 import { DeviationStatusBadge, EnforcementBadge } from '../components/ui/badges'
 import { useData } from '../data/DataContext'
-import { evidencePack, lastNDays, rangeFromDates, toIsoDate } from '../data/selectors'
+import { evidencePack, lastNDays, rangeFromDates } from '../data/selectors'
+import { dayOf } from '../lib/orgTime'
 import { fmtDate, fmtDateTime, fmtDateTimeFull, fmtUsd, fmtUsdCents } from '../lib/format'
 
 const PRESETS = [
@@ -70,7 +71,7 @@ export default function AuditExportScreen() {
   const ds = useData()
   const [agentId, setAgentId] = useState(ds.agents[0]?.id ?? '')
   const [preset, setPreset] = useState('30')
-  const [customStart, setCustomStart] = useState(toIsoDate(new Date(lastNDays(ds, 30).from)))
+  const [customStart, setCustomStart] = useState(dayOf(lastNDays(ds, 30).from))
   const [customEnd, setCustomEnd] = useState(ds.rangeEnd)
 
   const range = useMemo(() => {

@@ -307,6 +307,28 @@ describe('policy alert text agrees with the spend it describes', () => {
   })
 })
 
+describe('selectors stay internally consistent under an org business timezone', () => {
+  it('charts, KPIs, and evidence packs still agree when bucketing in America/New_York', async () => {
+    const { setOrgTimeZone } = await import('../lib/orgTime')
+    setOrgTimeZone('America/New_York')
+    try {
+      const range = last90Days(ds)
+      const series = dailySeries(ds, range)
+      const tasks = filterTasks(ds, { range })
+      expect(series).toHaveLength(90)
+      expect(series.reduce((a, p) => a + p.tasks, 0)).toBe(tasks.length)
+      expect(series.reduce((a, p) => a + p.costUsd, 0)).toBeCloseTo(sumCost(tasks), 6)
+
+      const pack = evidencePack(ds, 'ag-clm-fnol', last30Days(ds))!
+      const fnolTasks = filterTasks(ds, { agentId: 'ag-clm-fnol', range: last30Days(ds) })
+      expect(pack.performance.tasks).toBe(fnolTasks.length)
+      expect(pack.performance.costUsd).toBeCloseTo(sumCost(fnolTasks), 6)
+    } finally {
+      setOrgTimeZone('local')
+    }
+  })
+})
+
 describe('demo narratives hold in the generated data', () => {
   it('FNOL Intake Agent is over its monthly budget (narrative 1)', () => {
     const status = budgetStatuses(ds).find((b) => b.agent.id === 'ag-clm-fnol')

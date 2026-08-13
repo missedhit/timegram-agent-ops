@@ -26,6 +26,7 @@ import type {
   TaskOutcome,
   WorkTask,
 } from '../../domain/types'
+import { dayOf } from '../../lib/orgTime'
 import { COST_CENTERS, DEPARTMENTS } from '../seed/fixtures'
 
 /** The demo tenant. Fixed so reseeding is idempotent. */
@@ -363,8 +364,8 @@ export function fromRows(rows: DataSetRows, generatedAt: string): DataSet {
     )
     .sort(byTimestampThenId)
 
-  // The activity window is derived from the data itself (local calendar days).
-  const taskDays = tasks.map((t) => localDay(t.timestamp))
+  // The activity window is derived from the data itself (org-time calendar days).
+  const taskDays = tasks.map((t) => dayOf(t.timestamp))
   const rangeStart = taskDays.length > 0 ? taskDays.reduce((a, b) => (a < b ? a : b)) : ''
   const rangeEnd = taskDays.length > 0 ? taskDays.reduce((a, b) => (a > b ? a : b)) : ''
 
@@ -382,11 +383,3 @@ export function fromRows(rows: DataSetRows, generatedAt: string): DataSet {
   }
 }
 
-/** Local calendar date of an ISO timestamp, as 'YYYY-MM-DD'. */
-function localDay(iso: string): string {
-  const d = new Date(iso)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
