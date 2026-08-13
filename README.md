@@ -17,8 +17,8 @@ npm run dev
 
 Then open http://localhost:5173.
 
-**Live demo:** https://missedhit.github.io/timegram-agent-ops/ — deployed
-automatically from `main` by GitHub Actions.
+**Live demo:** https://demo.timegram.io — deployed automatically from `main`
+by GitHub Actions.
 
 **Pinning the numbers for a pitch:** append `?asof=YYYY-MM-DD` to any URL
 (e.g. `…/costs?asof=2026-08-01`) and the whole dataset anchors to that date —
