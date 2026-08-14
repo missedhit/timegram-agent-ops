@@ -11,3 +11,7 @@ supabase/.env
 
 # Python
 __pycache__/
+
+# Prospect handouts (contain raw API keys) and data exports
+handouts/
+exports/

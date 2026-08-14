@@ -15,7 +15,9 @@
     "emit:task": "tsx scripts/emit-task.ts",
     "example:agent": "node --env-file=.env.local --import=tsx connector/example/expense-audit-agent.ts",
     "org:create": "tsx scripts/org-create.ts",
-    "org:key": "tsx scripts/org-key.ts"
+    "org:key": "tsx scripts/org-key.ts",
+    "org:delete": "tsx scripts/org-delete.ts",
+    "org:export": "tsx scripts/export-org.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.5",
