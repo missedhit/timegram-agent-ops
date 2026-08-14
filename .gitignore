@@ -8,3 +8,6 @@ dist
 .env.*
 !.env.example
 supabase/.env
+
+# Python
+__pycache__/

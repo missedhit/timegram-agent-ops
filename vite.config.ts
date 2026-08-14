@@ -12,6 +12,7 @@ export default defineConfig({
     include: [
       'src/**/*.test.ts',
       'supabase/functions/**/*contract.test.ts',
+      'supabase/functions/**/vectors.test.ts',
       'connector/src/**/*.test.ts',
     ],
   },
