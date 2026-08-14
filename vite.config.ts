@@ -13,6 +13,7 @@ export default defineConfig({
       'src/**/*.test.ts',
       'supabase/functions/**/*contract.test.ts',
       'supabase/functions/**/vectors.test.ts',
+      'supabase/functions/**/handout.test.ts',
       'connector/src/**/*.test.ts',
     ],
   },

@@ -10,6 +10,17 @@
 > now live in **docs/poc-runbook.md** — that is the working document from
 > here on; this plan is the record.
 >
+> **M6 (post-plan addition, same session): the org lifecycle is now
+> UI-driven.** A Platform Admin screen at /admin (visible only to
+> platform_admins members; founder bootstrapped) covers create-org +
+> handout download, key issue/revoke, JSON export, and delete — backed by a
+> new `admin` edge function (service-role writes, session-JWT + 
+> platform_admins gate, CORS for the app origins, audit lines in function
+> logs). The browser still never writes to the DB. CLI scripts remain as
+> fallback; the runbook is UI-first. Verified: 24-check server gauntlet
+> (auth chain, lifecycle, ingest parity with a dashboard-issued key,
+> Northbridge protection) + full UI click-through with a throwaway admin.
+>
 > **Remaining founder gates (all in the runbook as numbered steps):**
 > 1. Resend SMTP before the first prospect login (built-in email ~2/hr) —
 >    runbook "Pre-prospect hygiene §1".
@@ -30,8 +41,8 @@
 | Supabase | Project `eaeqqipehxxaypvzdxcv`: schema + RLS + magic-link auth + ingest function, all live |
 | Connectors | TypeScript SDK in `connector/` AND Python (`connector-py/timegram_reporter.py`, stdlib-only, copy-paste distribution) — parity enforced by shared golden vectors in CI |
 | Tests | 214 vitest + 32 unittest green, both suites in CI on every push |
-| Onboarding kit | `org:create` / `org:key` / `org:export` / `org:delete` + per-prospect CONNECT handout + docs/poc-runbook.md |
-| M0–M5 | ✅ All done, adversarial reviews absorbed (M0: timezone fixes; M1+M2: 10 findings; M3: 9; M5: 11) |
+| Onboarding kit | **UI-driven: Platform Admin screen at /admin** (create org + handout, keys, export, delete) backed by the `admin` edge function; CLI scripts (`org:create` etc.) as fallback; docs/poc-runbook.md is UI-first |
+| M0–M6 | ✅ All done, adversarial reviews absorbed (M0: timezone fixes; M1+M2: 10 findings; M3: 9; M5: 11; M6: pending review) |
 
 **Next action: none in this plan — operate via docs/poc-runbook.md.** The
 founder gates listed in the header are the only outstanding work.

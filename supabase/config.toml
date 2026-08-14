@@ -412,3 +412,12 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# Per-function JWT verification: ingest authenticates via x-api-key (raw
+# keys are not JWTs); admin requires a session JWT at the gateway as
+# defense-in-depth (the in-function platform_admins check is the boundary).
+[functions.ingest]
+verify_jwt = false
+
+[functions.admin]
+verify_jwt = true

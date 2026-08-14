@@ -1,5 +1,6 @@
-import { Bot, CircleDollarSign, FileCheck2, ScrollText, ShieldCheck, X } from 'lucide-react'
+import { Bot, Building2, CircleDollarSign, FileCheck2, ScrollText, ShieldCheck, X } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
+import { useAdminStatus } from '../../admin/useAdminStatus'
 import { dataMode } from '../../data/dataMode'
 import { useOrgName } from '../../data/OrgContext'
 
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const orgName = useOrgName()
+  const isAdmin = useAdminStatus()
   return (
     <>
       {/* Scrim for the mobile drawer only. */}
@@ -64,6 +66,24 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               {label}
             </NavLink>
           ))}
+          {isAdmin === true && (
+            <>
+              <div className="mx-2.5 my-2 border-t border-slate-200" />
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`
+                }
+              >
+                <Building2 className="h-4 w-4 shrink-0" />
+                Platform Admin
+              </NavLink>
+            </>
+          )}
         </nav>
 
         <div className="border-t border-slate-200 px-5 py-3 text-xs text-slate-400">

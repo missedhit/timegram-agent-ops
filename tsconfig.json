@@ -21,6 +21,9 @@
     "vite.config.ts",
     "supabase/functions/**/*contract.ts",
     "supabase/functions/**/*contract.test.ts",
-    "supabase/functions/**/vectors.test.ts"
+    "supabase/functions/**/vectors.test.ts",
+    "supabase/functions/admin/handout.ts",
+    "supabase/functions/admin/handout.test.ts",
+    "supabase/functions/admin/starter-policies.ts"
   ]
 }

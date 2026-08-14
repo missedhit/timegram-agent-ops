@@ -1,10 +1,12 @@
 # PoC operations runbook
 
 Day-to-day operations for the prospect PoC environment at
-**https://agentworkforce.timegram.io**. Everything here is executable by one
-person from this repo on the dev machine (`.env.local` holds the secrets;
-`.env.example` shows the shape). Sections marked **founder gate** need
-dashboard access or DNS and cannot be scripted.
+**https://agentworkforce.timegram.io**. The org lifecycle is UI-driven from
+the **Platform Admin** screen in the app (visible only to platform admins);
+every admin action there is audited in the edge-function logs. The CLI
+scripts remain as fallback and need this repo + `.env.local` on the dev
+machine. Sections marked **founder gate** need dashboard access or DNS and
+cannot be scripted.
 
 ---
 
@@ -13,52 +15,52 @@ dashboard access or DNS and cannot be scripted.
 Prereq (one-time, before the FIRST prospect ever): the two hygiene items at
 the bottom of this page — custom SMTP and key rotation.
 
-1. Create the org (≈10 seconds — org row, 5 starter policies, owner login,
-   API key, handout):
+1. Sign in at https://agentworkforce.timegram.io → **Platform Admin** (in
+   the sidebar) → **New organization**. Enter the org name, the owner's
+   work email, and their timezone (daily cost buckets and "today" follow
+   it; defaults to America/New_York) → **Create organization**. Takes a few
+   seconds: org, 5 starter policies, the owner's login, and an API key.
 
-   ```bash
-   npm run org:create -- --name "Acme Corp" --owner-email jane@acme.com
-   ```
+2. The key panel appears **once**: click **Download handout** (their
+   `CONNECT-<org>.md` with app URL, ingest URL, key, and curl / Python / TS
+   snippets), skim it, then **Dismiss** — the key cannot be retrieved
+   again, only replaced.
 
-   Add `--timezone America/Chicago` if the prospect isn't Eastern (daily
-   cost buckets and "today" follow it; default America/New_York).
-
-2. Open `handouts/CONNECT-acme-corp.md`, skim that it looks right, and send
-   it to the prospect (email or however you share secrets with them),
+3. Email the handout to the prospect (however you share secrets),
    **attaching `connector-py/timegram_reporter.py`** — the handout tells
-   them the single-file Python SDK is attached to the same email. It
-   contains their app URL, ingest URL, API key, and copy-paste snippets for
-   curl / Python / TypeScript. (TS prospects need repo access instead — a
-   GitHub invite to the repo; the TS SDK is used from a clone.)
+   them the single-file Python SDK is attached to the same email. (TS
+   prospects need repo access instead — a GitHub invite; the TS SDK is used
+   from a clone.)
 
-3. Have them (or you, demoing on a call) sign in at
+4. Have them (or you, demoing on a call) sign in at
    https://agentworkforce.timegram.io with the owner email — magic link,
-   no password.
-
-4. First data: run the handout's curl snippet, or from this repo — put the
-   two values from the handout in a scratch file and point the example at it:
-
-   ```bash
-   printf 'INGEST_URL=https://<project>.supabase.co/functions/v1/ingest\nINGEST_API_KEY=tgk_live_...\n' > acme.env
-   ```
-
-   ```bash
-   python connector-py/example_expense_agent.py --env-file acme.env
-   ```
-
-   (Delete the scratch file after.) Unknown agents auto-register
-   on first report — the Work Log fills immediately; Registry, Costs,
-   Policies, and Audit follow from the same events.
+   no password — and run the handout's curl snippet. Unknown agents
+   auto-register on first report: the Work Log fills immediately; Registry,
+   Costs, Policies, and Audit follow from the same events.
 
 5. Done. The prospect connects their real agents by copying
-   `connector-py/timegram_reporter.py` (Python, stdlib-only) or
-   `connector/src` (TypeScript) next to their agent code.
+   `connector-py/timegram_reporter.py` (Python, stdlib-only) or using
+   `connector/src` (TypeScript, from a repo clone) next to their agent code.
+
+**CLI fallback** (same result, from this repo):
+
+```bash
+npm run org:create -- --name "Acme Corp" --owner-email jane@acme.com
+```
+
+(`--timezone America/Chicago` optional; handout lands in
+`handouts/CONNECT-acme-corp.md`.) To exercise the ingest key from this repo:
+put the handout's two values in a scratch `acme.env` file (git-ignored via
+`*.env`) and run
+`python connector-py/example_expense_agent.py --env-file acme.env`.
 
 ## Support
 
 **Where the server logs are (founder gate — dashboard):**
 Supabase Dashboard → project `eaeqqipehxxaypvzdxcv` → Edge Functions →
-`ingest` → Logs. Every rejected event logs its reason there.
+`ingest` → Logs. Every rejected event logs its reason there. The `admin`
+function's Logs are the audit trail for dashboard actions (one `[admin]`
+line per create/issue/revoke/delete, with the acting user id).
 
 **Common errors a prospect will hit:**
 
@@ -71,20 +73,24 @@ Supabase Dashboard → project `eaeqqipehxxaypvzdxcv` → Edge Functions →
 | Login shows "Signups not allowed for otp" | The email is not an onboarded auth user — sign-in never creates accounts | Check spelling; onboard them (org:create adds the owner) or add the user in Dashboard → Authentication → Users |
 | Magic link never arrives (for a KNOWN user) | SMTP not configured, or rate-limited | The pre-prospect SMTP gate below; built-in Supabase email is ~2/hour |
 
-**Key rotation (leaked or routine):**
+**Key rotation (leaked or routine):** Platform Admin → the org's **Manage**
+→ **Keys** → issue the new key (label it, e.g. `rotated-2026-08`), hand it
+over, then **Revoke** the old one. Issue first, hand over, then revoke —
+revocation is immediate; in-flight retries with the old key 401 from that
+moment. CLI fallback:
 
 ```bash
-npm run org:key -- --org "Acme Corp" --list
 npm run org:key -- --org "Acme Corp" --issue --label rotated-2026-08
+```
+
+```bash
 npm run org:key -- --org "Acme Corp" --revoke <old-key-id>
 ```
 
-Issue first, hand over, then revoke — revocation is immediate; in-flight
-retries with the old key 401 from that moment.
-
 **Org switching:** users who belong to several orgs (you) get a dropdown in
 the app header; prospects with one org never see it. Active org persists
-per browser.
+per browser. The dropdown loads memberships once per sign-in — after
+creating an org from Platform Admin, reload the page to see it there.
 
 ## Deploys
 
@@ -92,35 +98,52 @@ Every push to `main` deploys BOTH sites: the demo (GitHub Pages, seed mode)
 and the app (Cloudflare Pages, live mode). Cloudflare also builds an
 auth-gated preview URL per push; magic links requested from a preview
 resolve to the production Site URL (agentworkforce.timegram.io) — fine for
-the PoC, just don't expect to stay on the preview after login.
+the PoC, just don't expect to stay on the preview after login. (Admin
+dashboard calls from a preview URL fail CORS by design — use production or
+localhost.)
+
+Edge functions deploy manually (not on push), from this repo:
+
+```bash
+npx supabase functions deploy ingest --project-ref eaeqqipehxxaypvzdxcv --no-verify-jwt
+```
+
+```bash
+npx supabase functions deploy admin --project-ref eaeqqipehxxaypvzdxcv
+```
+
+ingest must skip gateway JWT verification (agents authenticate with
+`x-api-key`, not JWTs); admin keeps it as defense-in-depth — its real gate
+is the in-function platform_admins check. Both are also recorded in
+`supabase/config.toml`.
 
 ## Backups (Free tier has none)
 
-`exports/` JSON dumps are the backup posture until a real prospect
-justifies the Pro upgrade (which adds daily backups — that upgrade is the
-trigger, revisit then):
+JSON dumps are the backup posture until a real prospect justifies the Pro
+upgrade (which adds daily backups — that upgrade is the trigger, revisit
+then). Per org: Platform Admin → **Manage** → **Export JSON** (downloads
+every table). For everything at once, CLI:
 
 ```bash
 npm run org:export -- --all          # every org, one dated folder each
-npm run org:export -- --org "Acme Corp"
 ```
 
-Run `--all` before anything destructive and weekly-ish otherwise. Exports
+Export before anything destructive and weekly-ish otherwise. Exports
 contain business data and key hashes, never raw keys.
 
 ## Offboard a prospect
 
-```bash
-npm run org:export -- --org "Acme Corp"   # keep a final snapshot
-npm run org:delete -- --org "Acme Corp"          # dry run: prints row counts
-npm run org:delete -- --org "Acme Corp" --yes    # deletes permanently
-```
-
+Platform Admin → the org's **Manage** → **Export JSON** (final snapshot) →
+**Delete…** → type the organization name exactly → **Delete permanently**.
 One cascade removes everything (members, agents, tasks, policies,
-deviations, approvals, keys). The live foundation org ("Northbridge
-Mutual") additionally requires `--force`. If the script reports the owner
-now belongs to no org, optionally remove that auth user: Dashboard →
-Authentication → Users.
+deviations, approvals, keys); the report lists sign-in accounts left with
+no workspace — optionally remove those in Dashboard → Authentication →
+Users. The live foundation org ("Northbridge Mutual") cannot be deleted
+from the dashboard at all; the only path is the CLI with `--force`:
+
+```bash
+npm run org:delete -- --org "Acme Corp" --yes    # CLI fallback
+```
 
 ---
 
@@ -201,13 +224,14 @@ session during setup. Before the first prospect:
 
 ## Quick reference
 
-| Task | Command |
-| --- | --- |
-| Onboard | `npm run org:create -- --name "X" --owner-email a@b.c` |
-| Issue/list/revoke keys | `npm run org:key -- --org "X" --issue\|--list\|--revoke <id>` |
-| Export (backup) | `npm run org:export -- --all` |
-| Offboard | `npm run org:delete -- --org "X" --yes` |
-| Apply migrations | `node scripts/apply-migrations.mjs` |
-| Reseed live org | `npm run seed:supabase` |
-| Auth URLs (after domain changes) | `node scripts/set-auth-config.mjs` |
-| Health check | `npm run check:supabase` |
+| Task | UI | CLI fallback |
+| --- | --- | --- |
+| Onboard | Platform Admin → New organization | `npm run org:create -- --name "X" --owner-email a@b.c` |
+| Issue/revoke keys | Platform Admin → Manage → Keys | `npm run org:key -- --org "X" --issue\|--list\|--revoke <id>` |
+| Export (backup) | Platform Admin → Manage → Export JSON | `npm run org:export -- --all` |
+| Offboard | Platform Admin → Manage → Delete… | `npm run org:delete -- --org "X" --yes` |
+| Apply migrations | — | `node scripts/apply-migrations.mjs` |
+| Deploy edge functions | — | see Deploys section |
+| Reseed live org | — | `npm run seed:supabase` |
+| Auth URLs (after domain changes) | — | `node scripts/set-auth-config.mjs` |
+| Health check | — | `npm run check:supabase` |
