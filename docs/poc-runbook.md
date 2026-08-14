@@ -24,9 +24,12 @@ the bottom of this page — custom SMTP and key rotation.
    cost buckets and "today" follow it; default America/New_York).
 
 2. Open `handouts/CONNECT-acme-corp.md`, skim that it looks right, and send
-   it to the prospect (email or however you share secrets with them). It
+   it to the prospect (email or however you share secrets with them),
+   **attaching `connector-py/timegram_reporter.py`** — the handout tells
+   them the single-file Python SDK is attached to the same email. It
    contains their app URL, ingest URL, API key, and copy-paste snippets for
-   curl / Python / TypeScript.
+   curl / Python / TypeScript. (TS prospects need repo access instead — a
+   GitHub invite to the repo; the TS SDK is used from a clone.)
 
 3. Have them (or you, demoing on a call) sign in at
    https://agentworkforce.timegram.io with the owner email — magic link,
@@ -64,8 +67,9 @@ Supabase Dashboard → project `eaeqqipehxxaypvzdxcv` → Edge Functions →
 | `401 unknown or revoked API key` | Key typo'd, or revoked | Check `npm run org:key -- --org "X" --list`; issue a fresh key if needed |
 | `422` with a list of field errors | Metadata contract violation | The error text is self-explanatory by design — it names each offending field; content fields get the metadata-only refusal |
 | `422 unknown policy "..."` | Deviation names a policy id not in their workspace | Policy ids are on their Policies screen; starter orgs have `pol-starter-1`…`5` |
-| Event accepted but agent shows "Auto-registered from first report" | Normal | Enrich via `/register` (snippet in their handout / SDK `register_agent`) |
-| Magic link never arrives | SMTP not configured, or rate-limited | The pre-prospect SMTP gate below; built-in Supabase email is ~2/hour |
+| Event accepted but agent shows "Auto-registered from first report" | Normal | Enrich via `/register` (see their handout / SDK `register_agent`) |
+| Login shows "Signups not allowed for otp" | The email is not an onboarded auth user — sign-in never creates accounts | Check spelling; onboard them (org:create adds the owner) or add the user in Dashboard → Authentication → Users |
+| Magic link never arrives (for a KNOWN user) | SMTP not configured, or rate-limited | The pre-prospect SMTP gate below; built-in Supabase email is ~2/hour |
 
 **Key rotation (leaked or routine):**
 
@@ -81,6 +85,14 @@ retries with the old key 401 from that moment.
 **Org switching:** users who belong to several orgs (you) get a dropdown in
 the app header; prospects with one org never see it. Active org persists
 per browser.
+
+## Deploys
+
+Every push to `main` deploys BOTH sites: the demo (GitHub Pages, seed mode)
+and the app (Cloudflare Pages, live mode). Cloudflare also builds an
+auth-gated preview URL per push; magic links requested from a preview
+resolve to the production Site URL (agentworkforce.timegram.io) — fine for
+the PoC, just don't expect to stay on the preview after login.
 
 ## Backups (Free tier has none)
 
@@ -133,28 +145,48 @@ mid-onboarding. Resend's free tier (100/day) is plenty for a PoC.
    - Password: the Resend API key
    - Sender email: `no-reply@timegram.io`
    - Sender name: `Timegram Agent Ops`
-5. Save, then **test with a non-founder address** (not your own — yours may
-   be cached/whitelisted): use a personal address, request a magic link at
-   https://agentworkforce.timegram.io, confirm it arrives within seconds
-   and the sender shows no-reply@timegram.io. (Any address can request a
-   link; only emails you've onboarded get a workspace after signing in.)
+5. Save, then **test with a non-founder address**. Important: sign-in never
+   creates accounts (`shouldCreateUser:false`), so an unknown address gets
+   an on-screen "Signups not allowed" error and **no email is sent at all**
+   — that outcome says nothing about SMTP. To actually exercise SMTP:
+   first add the test address as a user (Dashboard → Authentication →
+   Users → Add user → create user, with a personal address you can read),
+   then request a magic link at https://agentworkforce.timegram.io and
+   confirm it arrives within seconds from no-reply@timegram.io. Delete the
+   test user after.
 
 ### 2. Rotate the two secrets that passed through chat
 
 The service-role key and the personal access token were pasted into a chat
 session during setup. Before the first prospect:
 
-1. **Service-role key**: Dashboard → project `eaeqqipehxxaypvzdxcv` →
-   Settings → API Keys → `service_role` → Rotate (legacy keys page: "JWT
-   Keys"/"API Keys" depending on dashboard version — rotate the
-   service_role secret).
-   Then update `.env.local` → `SUPABASE_SERVICE_ROLE_KEY=<new value>`.
-   Nothing else holds it: Cloudflare Pages has only the anon key, edge
-   functions follow the rotation automatically, GitHub Actions has no
-   Supabase secrets.
-2. **Personal access token**: https://supabase.com/dashboard/account/tokens
-   → revoke the existing token → Generate new token.
+1. **Personal access token** (easy, independent):
+   https://supabase.com/dashboard/account/tokens → revoke the existing
+   token → Generate new token.
    Then update `.env.local` → `SUPABASE_ACCESS_TOKEN=<new value>`.
+2. **Service-role key** — important: ours is a **legacy JWT key**, and
+   legacy anon + service_role keys are both signed by the one project JWT
+   secret. There is no service-role-only rotation on the legacy path;
+   rotating the JWT secret invalidates **both keys and all active user
+   sessions**. So the rotation is a short sequence, done in one sitting:
+   1. Dashboard → project `eaeqqipehxxaypvzdxcv` → Settings → API → rotate
+      the JWT secret. From this moment the live app's anon key is dead —
+      continue immediately.
+   2. Copy the NEW `service_role` key → `.env.local`
+      `SUPABASE_SERVICE_ROLE_KEY=<new>`.
+   3. Copy the NEW `anon` key → `.env.local` `VITE_SUPABASE_ANON_KEY=<new>`
+      AND Cloudflare Pages → the project → Settings → Environment
+      variables → update `VITE_SUPABASE_ANON_KEY` → Save → Deployments →
+      Retry deployment (the env var only takes effect on a new build).
+   4. Everyone (you) is signed out; sign back in via magic link. Edge
+      functions follow the rotation automatically; GitHub Actions holds no
+      Supabase secrets.
+   (Alternative, zero-downtime path if the dashboard offers it: Settings →
+   API Keys → create a new **secret key** (`sb_secret_…`), put THAT in
+   `.env.local` as `SUPABASE_SERVICE_ROLE_KEY`, verify step 3 below, and
+   leave the legacy keys alone until the app is migrated to a publishable
+   key. Don't "disable legacy keys" — the app and edge functions still use
+   them.)
 3. Confirm nothing broke:
 
    ```bash
@@ -162,8 +194,8 @@ session during setup. Before the first prospect:
    npm run org:key -- --org "Northbridge Mutual" --list
    ```
 
-The anon key does NOT need rotation — it is public by design (ships in the
-app bundle; RLS is the boundary).
+   …and load https://agentworkforce.timegram.io (fresh tab) to confirm the
+   app boots and sign-in works.
 
 ---
 

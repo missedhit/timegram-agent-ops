@@ -1,28 +1,25 @@
-# PoC environment — working plan (resume here)
+# PoC environment — working plan (COMPLETE — see remaining founder gates)
 
-> This is the live working plan, committed so any session on any device can pick
-> it up. Last updated 2026-08-14 (third session). **M0–M3 are DONE and their
-> adversarial reviews are ABSORBED.** M3 landed the Python reporter + 92 golden
-> vectors (branch coverage across all three contracts) with TS/Python parity
-> proven three ways: shared vectors in both CI suites, a 9,000-case seeded
-> differential fuzz (identical verdicts AND identical in-order error lists),
-> and the live Acme checkpoint (Python example registered ag-fin-expense-py
-> and filled the Acme Work Log). M3's review confirmed 9 findings, all fixed:
-> CPython 4300-digit int limit crash on hour-24 fractions (digit scan now),
-> Object.keys array-index enumeration order mirrored in _js_key_order, 2xx
-> null/NaN body verdict parity in _send, 7 unpinned vector branches added,
-> BOM-safe env loading (utf-8-sig), --report-deviation flag-swallow guard,
-> and supabase contract/test files added to tsc's include.
-> **M4 is DONE**: founder connected the repo to Cloudflare Pages and added the
-> agentworkforce.timegram.io custom domain (zone was already on Cloudflare);
-> set-auth-config.mjs ran (site_url → hosted app, localhost:5173 still
-> allowed). Verified: /costs deep link cold-loads 200 with the auth gate and
-> zero console errors, demo pinned-URL unchanged ($11,900), app.timegram.io
-> untouched (still the pre-existing product). Only untestable-from-CLI bit:
-> founder's own phone login + org switch — flagged to founder, not blocking.
-> **Next action: M5 (onboarding kit + ops hygiene).** The blocking
-> founder-gated item before any real prospect is Resend SMTP (built-in
-> Supabase email is ~2/hr); key rotation is the other hygiene gate.
+> Last updated 2026-08-14 (third session). **ALL MILESTONES M0–M5 ARE DONE
+> and every adversarial review is ABSORBED** (M0 timezone fixes; M1+M2: 10
+> findings; M3: 9 findings; M5 final review: 11 findings). The M5 acceptance
+> dry-run passed on 2026-08-14: org:create "Demo Prospect Inc" → handout →
+> Python example + deviation via the handout key (3 tasks, 1 open deviation
+> on pol-starter-1, 5 starter policies) → org:export → org:delete --yes →
+> clean, with Northbridge protected behind --force. Day-to-day operations
+> now live in **docs/poc-runbook.md** — that is the working document from
+> here on; this plan is the record.
+>
+> **Remaining founder gates (all in the runbook as numbered steps):**
+> 1. Resend SMTP before the first prospect login (built-in email ~2/hr) —
+>    runbook "Pre-prospect hygiene §1".
+> 2. Rotate the personal access token + service-role key that passed
+>    through chat — runbook "Pre-prospect hygiene §2" (read it first: the
+>    legacy JWT rotation also swaps the anon key and needs a Cloudflare
+>    Pages env update + redeploy in the same sitting).
+> 3. The full incognito acceptance run from the runbook alone (after SMTP):
+>    onboard a throwaway org end to end in under 10 minutes.
+> 4. Small M4 leftover: phone login + org-switch spot check.
 
 ## Where things stand right now
 
@@ -33,10 +30,11 @@
 | Supabase | Project `eaeqqipehxxaypvzdxcv`: schema + RLS + magic-link auth + ingest function, all live |
 | Connectors | TypeScript SDK in `connector/` AND Python (`connector-py/timegram_reporter.py`, stdlib-only, copy-paste distribution) — parity enforced by shared golden vectors in CI |
 | Tests | 214 vitest + 32 unittest green, both suites in CI on every push |
-| M0–M3 | ✅ Done, adversarial reviews absorbed (M0: timezone fixes; M1+M2: 10 findings; M3: 9 findings) |
+| Onboarding kit | `org:create` / `org:key` / `org:export` / `org:delete` + per-prospect CONNECT handout + docs/poc-runbook.md |
+| M0–M5 | ✅ All done, adversarial reviews absorbed (M0: timezone fixes; M1+M2: 10 findings; M3: 9; M5: 11) |
 
-**Next action: M4** (hosted live app on Cloudflare Pages — founder gate for
-the account + DNS; see M4 section for the exact clicks).
+**Next action: none in this plan — operate via docs/poc-runbook.md.** The
+founder gates listed in the header are the only outstanding work.
 
 ## Resuming from another device (phone, web, another laptop)
 
@@ -58,8 +56,10 @@ see `.env.example` for the shape):
 So from a phone: author and push; land the machine-bound steps in the next
 desktop session. Every milestone below marks its own founder gates.
 
-**Founder gates still outstanding:** Cloudflare account + DNS (M4), Resend SMTP
-+ key rotation (M5). Everything else is scripted.
+**Founder gates still outstanding:** Resend SMTP + secret rotation + the
+incognito acceptance run (all M5 hygiene — exact steps in
+docs/poc-runbook.md). M4's Cloudflare gate is done. Everything else is
+scripted.
 
 ---
 

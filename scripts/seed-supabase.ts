@@ -110,9 +110,14 @@ async function gcStale(table: string, keepIds: Set<string>, generatorId: RegExp)
 }
 
 async function grantMembership(email: string) {
-  const { data, error } = await supabase.auth.admin.listUsers()
-  if (error) throw new Error(`listUsers: ${error.message}`)
-  const user = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
+  // listUsers is paged (50/page default) — search every page.
+  let user
+  for (let page = 1; !user; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+    if (error) throw new Error(`listUsers: ${error.message}`)
+    user = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
+    if (data.users.length < 1000) break
+  }
   if (!user) {
     console.error(
       `No auth user with email ${email} — sign in once via the app's magic link first.`,

@@ -41,28 +41,29 @@ if (!orgRef && !flag('all')) {
 const supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-const TABLES = [
-  'org_members',
-  'agents',
-  'agent_versions',
-  'policies',
-  'agent_policies',
-  'tasks',
-  'deviations',
-  'approvals',
-  'api_keys',
-] as const
+// Each table with the column(s) that make range-pagination deterministic —
+// PostgREST guarantees nothing about row order without an explicit sort, and
+// unstable page boundaries silently duplicate or drop rows.
+const TABLES: ReadonlyArray<{ name: string; order: string[] }> = [
+  { name: 'org_members', order: ['user_id'] },
+  { name: 'agents', order: ['id'] },
+  { name: 'agent_versions', order: ['agent_id', 'version'] },
+  { name: 'policies', order: ['id'] },
+  { name: 'agent_policies', order: ['agent_id', 'policy_id'] },
+  { name: 'tasks', order: ['id'] },
+  { name: 'deviations', order: ['id'] },
+  { name: 'approvals', order: ['id'] },
+  { name: 'api_keys', order: ['id'] },
+]
 
 const PAGE = 1000 // PostgREST default max rows per request — page past it
 
-async function fetchAll(table: string, orgId: string) {
+async function fetchAll(table: string, orderCols: string[], orgId: string) {
   const rows: unknown[] = []
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from(table)
-      .select('*')
-      .eq('org_id', orgId)
-      .range(from, from + PAGE - 1)
+    let query = supabase.from(table).select('*').eq('org_id', orgId)
+    for (const col of orderCols) query = query.order(col)
+    const { data, error } = await query.range(from, from + PAGE - 1)
     if (error) throw new Error(`${table}: ${error.message}`)
     rows.push(...(data ?? []))
     if (!data || data.length < PAGE) return rows
@@ -75,7 +76,11 @@ async function exportOrg(org: { id: string; name: string }) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
   const stamp = new Date().toISOString().slice(0, 10)
-  const dir = fileURLToPath(new URL(`../exports/${slug}-${stamp}`, import.meta.url))
+  // org-id prefix keeps directories unique even when two org names collapse
+  // to the same slug — these dumps are the only backup on the Free tier.
+  const dir = fileURLToPath(
+    new URL(`../exports/${slug || 'org'}-${org.id.slice(0, 8)}-${stamp}`, import.meta.url),
+  )
   mkdirSync(dir, { recursive: true })
 
   const { data: orgRow, error } = await supabase.from('orgs').select('*').eq('id', org.id).single()
@@ -84,12 +89,14 @@ async function exportOrg(org: { id: string; name: string }) {
 
   let total = 1
   for (const table of TABLES) {
-    const rows = await fetchAll(table, org.id)
-    writeFileSync(`${dir}/${table}.json`, JSON.stringify(rows, null, 2), 'utf-8')
+    const rows = await fetchAll(table.name, table.order, org.id)
+    writeFileSync(`${dir}/${table.name}.json`, JSON.stringify(rows, null, 2), 'utf-8')
     total += rows.length
-    console.log(`  ${table.padEnd(16)} ${rows.length}`)
+    console.log(`  ${table.name.padEnd(16)} ${rows.length}`)
   }
-  console.log(`Exported "${org.name}" — ${total} rows → exports/${slug}-${stamp}/`)
+  console.log(
+    `Exported "${org.name}" — ${total} rows → exports/${slug || 'org'}-${org.id.slice(0, 8)}-${stamp}/`,
+  )
 }
 
 async function main() {

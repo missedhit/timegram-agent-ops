@@ -106,8 +106,8 @@ the agent (name, owner, budget) any time via \`/register\`.
 
 ## Python (any stack, no dependencies)
 
-Copy \`timegram_reporter.py\` from the repo we shared (single file, stdlib
-only, Python 3.9+) next to your agent:
+Copy \`timegram_reporter.py\` — the single-file SDK attached to the same
+email as this page (stdlib only, Python 3.9+) — next to your agent:
 
 \`\`\`python
 from timegram_reporter import TimegramReporter
@@ -126,8 +126,12 @@ with timegram.track(description="Processing morning invoice batch", cost_usd=0.3
 
 ## TypeScript / JavaScript
 
+The TS SDK lives in the \`connector/\` folder of our repo and imports shared
+contract modules, so it is used from a clone rather than a single copied
+file — ask us for repo access (or a bundled build) and import it in place:
+
 \`\`\`ts
-import { TimegramReporter } from './reporter'  // copy connector/src from the shared repo
+import { TimegramReporter } from '<repo>/connector/src'
 
 const timegram = new TimegramReporter({
   ingestUrl: '${ingestUrl}',
@@ -175,8 +179,10 @@ async function main() {
   if (orgError) throw new Error(`orgs: ${orgError.message}`)
 
   // 2. Starter policies — the Policies screen is never empty, and the
-  // deviation flow has real targets from the first minute.
-  const today = new Date().toISOString().slice(0, 10)
+  // deviation flow has real targets from the first minute. created_at is
+  // "today" in the ORG's timezone (an evening onboarding must not stamp
+  // policies with a date in the org's future — same rule as deployed_at).
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: timezone })
   const { error: policiesError } = await supabase.from('policies').insert(
     STARTER_POLICIES.map((p) => ({
       org_id: orgId,
@@ -192,10 +198,16 @@ async function main() {
 
   // 3. Owner auth user — created if missing. email_confirm:true works with
   // public signups disabled, and their daily login stays the ordinary
-  // magic-link flow.
-  const { data: users, error: usersError } = await supabase.auth.admin.listUsers()
-  if (usersError) throw new Error(`listUsers: ${usersError.message}`)
-  let user = users.users.find((u) => u.email?.toLowerCase() === ownerEmail.toLowerCase())
+  // magic-link flow. listUsers is paged (50/page default) — page through
+  // all of them or an existing owner beyond page 1 looks missing and
+  // createUser 422s mid-onboarding.
+  let user
+  for (let page = 1; !user; page++) {
+    const { data: batch, error: usersError } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+    if (usersError) throw new Error(`listUsers: ${usersError.message}`)
+    user = batch.users.find((u) => u.email?.toLowerCase() === ownerEmail.toLowerCase())
+    if (batch.users.length < 1000) break
+  }
   let userNote = 'existing auth user'
   if (!user) {
     const { data: created, error: createError } = await supabase.auth.admin.createUser({

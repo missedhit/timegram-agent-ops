@@ -15,3 +15,4 @@ __pycache__/
 # Prospect handouts (contain raw API keys) and data exports
 handouts/
 exports/
+*.env
