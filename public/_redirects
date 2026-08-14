@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback: serve the app shell for every path so the
+# router resolves deep links (/costs, /work-log, ...) on cold loads.
+# Inert on GitHub Pages — the demo uses its 404.html mechanism instead.
+/* /index.html 200
