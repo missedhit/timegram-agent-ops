@@ -91,9 +91,9 @@ export default function AgentDetailScreen() {
         / {agent.name}
       </div>
 
-      <div className="mt-1 mb-5 flex items-start justify-between gap-4">
+      <div className="mt-1 mb-5 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">{agent.name}</h1>
             <StatusBadge status={agent.status} />
             <RiskBadge level={agent.riskLevel} />
@@ -141,8 +141,8 @@ export default function AgentDetailScreen() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 space-y-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           <Card title="Activity" subtitle="Tasks per day · last 30 days">
             <ActivityBarChart data={activity30} />
           </Card>
@@ -234,7 +234,7 @@ export default function AgentDetailScreen() {
           </Card>
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <Card title="Profile">
             <ProfileRow label="Owner">
               {agent.owner.name}

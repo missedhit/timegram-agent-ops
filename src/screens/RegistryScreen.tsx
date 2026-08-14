@@ -33,7 +33,7 @@ function compactList(items: string[], max = 2): string {
 function ConnectFirstAgent() {
   const ingestUrl = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://<project>.supabase.co'}/functions/v1/ingest`
   return (
-    <div className="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-white p-8">
+    <div className="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-white p-5 sm:p-8">
       <h2 className="text-lg font-semibold tracking-tight text-slate-900">
         Connect your first agent
       </h2>

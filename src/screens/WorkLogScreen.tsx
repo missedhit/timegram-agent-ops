@@ -197,7 +197,7 @@ export default function WorkLogScreen() {
       </TableShell>
 
       {tasks.length > PAGE_SIZE && (
-        <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
+        <div className="mt-3 flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <span>
             Showing {currentPage * PAGE_SIZE + 1}–{Math.min((currentPage + 1) * PAGE_SIZE, tasks.length)} of{' '}
             {tasks.length.toLocaleString('en-US')} tasks

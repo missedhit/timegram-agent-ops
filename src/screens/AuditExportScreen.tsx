@@ -29,7 +29,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="evidence-section border-t border-slate-200 px-8 py-5">
+    <section className="evidence-section border-t border-slate-200 px-4 py-5 sm:px-8">
       <div className="mb-3">
         <h3 className="text-sm font-semibold text-slate-900">
           {step}. {title}
@@ -43,21 +43,24 @@ function Section({
 
 function DocTable({ head, children }: { head: string[]; children: React.ReactNode }) {
   return (
-    <table className="w-full border-collapse text-xs">
-      <thead>
-        <tr>
-          {head.map((h) => (
-            <th
-              key={h}
-              className="border-b border-slate-200 px-2 py-1.5 text-left font-semibold uppercase tracking-wide text-slate-500"
-            >
-              {h}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>{children}</tbody>
-    </table>
+    // Scrolls sideways on a phone; prints at full width with no scrollbar.
+    <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 print:overflow-visible">
+      <table className="w-full min-w-[520px] border-collapse text-xs sm:min-w-0">
+        <thead>
+          <tr>
+            {head.map((h) => (
+              <th
+                key={h}
+                className="border-b border-slate-200 px-2 py-1.5 text-left font-semibold uppercase tracking-wide text-slate-500"
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
   )
 }
 
@@ -185,8 +188,8 @@ export default function AuditExportScreen() {
 
       {/* The evidence pack document — this is what prints. */}
       <article className="evidence-pack mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white print:max-w-none print:rounded-none print:border-0">
-        <header className="evidence-section px-8 pb-5 pt-6">
-          <div className="flex items-start justify-between gap-6">
+        <header className="evidence-section px-4 pb-5 pt-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6 print:flex-row print:justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700">
                 Agent evidence pack
@@ -196,7 +199,7 @@ export default function AuditExportScreen() {
               </h2>
               <p className="mt-0.5 text-sm text-slate-600">{agent.purpose}</p>
             </div>
-            <div className="shrink-0 text-right text-xs text-slate-500">
+            <div className="shrink-0 text-xs text-slate-500 sm:text-right print:text-right">
               <div className="text-sm font-semibold text-slate-900">{orgName}</div>
               <div className="mt-0.5">Timegram Agent Ops</div>
               <div className="mt-1.5">Generated {fmtDateTimeFull(ds.generatedAt)}</div>
@@ -207,7 +210,7 @@ export default function AuditExportScreen() {
             </div>
           </div>
 
-          <dl className="mt-4 grid grid-cols-4 gap-x-6 gap-y-2 border-t border-slate-100 pt-4 text-xs">
+          <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-slate-100 pt-4 text-xs md:grid-cols-4 print:grid-cols-4">
             <div>
               <dt className="text-slate-500">Period covered</dt>
               <dd className="mt-0.5 font-medium text-slate-900">
@@ -256,7 +259,7 @@ export default function AuditExportScreen() {
             </EmptyNote>
           ) : (
             <>
-              <dl className="mb-4 grid grid-cols-5 gap-3">
+              <dl className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 print:grid-cols-5">
                 {[
                   { label: 'Tasks performed', value: perf.tasks.toLocaleString('en-US') },
                   {
@@ -406,7 +409,7 @@ export default function AuditExportScreen() {
         </Section>
 
         <Section step={6} title="Access and permissions of record">
-          <div className="grid grid-cols-3 gap-6 text-xs">
+          <div className="grid grid-cols-1 gap-5 text-xs sm:grid-cols-3 sm:gap-6 print:grid-cols-3">
             <div>
               <div className="mb-1.5 font-semibold text-slate-700">Permitted actions</div>
               <ul className="space-y-1 text-slate-600">
@@ -434,7 +437,7 @@ export default function AuditExportScreen() {
           </div>
         </Section>
 
-        <footer className="evidence-section border-t border-slate-200 px-8 py-4 text-[11px] leading-relaxed text-slate-500">
+        <footer className="evidence-section border-t border-slate-200 px-4 py-4 text-[11px] leading-relaxed text-slate-500 sm:px-8">
           Prepared by Timegram Agent Ops for {orgName} · Agent {agent.name} · Period{' '}
           {fmtDate(pack.periodStart)} – {fmtDate(pack.periodEnd)} · Generated{' '}
           {fmtDateTimeFull(ds.generatedAt)} · Metadata-only record; no prompt or output content

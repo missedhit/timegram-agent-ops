@@ -114,8 +114,8 @@ export default function CostDashboardScreen() {
         />
       </div>
 
-      <div className="mb-4 grid grid-cols-3 gap-4">
-        <div className="col-span-2">
+      <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-2">
           <Card title="Spend trend" subtitle="Daily spend, all agents · last 90 days">
             <CostTrendChart
               data={view.trend90}
@@ -158,7 +158,7 @@ export default function CostDashboardScreen() {
         </Card>
       </div>
 
-      <div className="mb-4 grid grid-cols-3 gap-4">
+      <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card title="Spend by agent" subtitle="Last 30 days">
           <RankedBars rows={view.byAgent} />
         </Card>
@@ -174,7 +174,7 @@ export default function CostDashboardScreen() {
         title="Cost per outcome"
         subtitle="AI cost per unit of work vs human baseline · last 30 days"
       >
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {view.economics.map((row) => (
             <div
               key={`${row.agent.id}-${row.processLabel}`}

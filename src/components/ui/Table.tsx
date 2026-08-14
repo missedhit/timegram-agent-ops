@@ -5,7 +5,9 @@ import { useHref, useNavigate } from 'react-router-dom'
 
 export function TableShell({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    /* The scroll container also caps the min-content width of any grid or flex
+       ancestor, so a wide table scrolls itself instead of widening the page. */
+    <div className="w-full overflow-x-auto rounded-lg border border-slate-200 bg-white">
       <table className="w-full border-collapse text-sm">{children}</table>
     </div>
   )

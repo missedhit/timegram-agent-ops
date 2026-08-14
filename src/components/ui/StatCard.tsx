@@ -11,10 +11,10 @@ export default function StatCard({
   tone?: 'default' | 'alert'
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3.5">
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3 sm:px-4 sm:py-3.5">
       <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
       <div
-        className={`mt-1 text-2xl font-semibold tabular-nums tracking-tight ${
+        className={`mt-1 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl ${
           tone === 'alert' ? 'text-red-600' : 'text-slate-900'
         }`}
       >

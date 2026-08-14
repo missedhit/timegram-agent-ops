@@ -169,14 +169,14 @@ export default function PoliciesScreen() {
         </Card>
       </div>
 
-      <div className="mb-4 grid grid-cols-3 gap-4">
-        <div className="col-span-2">
+      <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-2">
           <Card
             title="Deviations feed"
             subtitle={`${deviations.length} of ${ds.deviations.length} deviations`}
             padded={false}
             actions={
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <FilterSelect label="Agent" value={agentFilter} options={agentOptions} onChange={setAgentFilter} />
                 <FilterSelect label="Status" value={statusFilter} options={STATUS_OPTIONS} onChange={setStatusFilter} />
               </div>
@@ -244,7 +244,7 @@ export default function PoliciesScreen() {
                     <Link
                       to={`/agents/${row.agentId}`}
                       title={agentName.get(row.agentId)}
-                      className="block max-w-[104px] truncate text-sm font-medium text-slate-800 hover:text-indigo-700 2xl:max-w-none"
+                      className="block truncate text-sm font-medium text-slate-800 hover:text-indigo-700 lg:max-w-[104px] 2xl:max-w-none"
                     >
                       {agentName.get(row.agentId)}
                     </Link>

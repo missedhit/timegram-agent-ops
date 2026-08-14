@@ -8,6 +8,21 @@
   body {
     @apply bg-slate-50 text-slate-900 antialiased;
   }
+
+}
+
+/*
+ * iOS Safari zooms the whole page when a focused control has a font-size below
+ * 16px, which leaves the app scrolled sideways after every filter change. Bump
+ * the controls on phone-width screens only. Deliberately unlayered so it wins
+ * over the `text-sm` utility on each control.
+ */
+@media (max-width: 639px) {
+  select,
+  textarea,
+  input:not([type='checkbox']):not([type='radio']) {
+    font-size: 16px;
+  }
 }
 
 /**
