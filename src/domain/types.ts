@@ -9,7 +9,11 @@
  * content. Tasks carry descriptions of business activity, never model I/O.
  */
 
-export type Department = 'Finance' | 'Support' | 'Sales Ops' | 'Claims' | 'IT'
+/**
+ * Free-form: every organization brings its own org chart. The demo dataset
+ * uses Finance / Support / Sales Ops / Claims / IT.
+ */
+export type Department = string
 
 export type AgentStatus = 'active' | 'paused' | 'retired'
 
@@ -21,7 +25,8 @@ export type EnforcementMode = 'block' | 'log-only'
 
 export type DeviationStatus = 'open' | 'acknowledged' | 'resolved'
 
-export type ModelProvider = 'Anthropic' | 'OpenAI' | 'Google' | 'On-prem'
+/** Free-form label; the demo dataset uses Anthropic / OpenAI / Google / On-prem. */
+export type ModelProvider = string
 
 export interface AgentOwner {
   name: string

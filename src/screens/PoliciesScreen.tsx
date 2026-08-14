@@ -156,6 +156,14 @@ export default function PoliciesScreen() {
                   </Td>
                 </tr>
               ))}
+              {ds.policies.length === 0 && (
+                <tr>
+                  <Td align="center" className="py-8 text-slate-500" colSpan={5}>
+                    No policies defined yet. Your workspace admin can add starter policies
+                    during onboarding.
+                  </Td>
+                </tr>
+              )}
             </tbody>
           </TableShell>
         </Card>
@@ -223,6 +231,13 @@ export default function PoliciesScreen() {
               </tr>
             </thead>
             <tbody>
+              {matrix.rows.length === 0 && (
+                <tr>
+                  <Td align="center" className="py-8 text-slate-500" colSpan={2}>
+                    No deviations recorded.
+                  </Td>
+                </tr>
+              )}
               {matrix.rows.map((row) => (
                 <tr key={row.agentId}>
                   <Td>

@@ -2,16 +2,34 @@ import { EyeOff, LogOut } from 'lucide-react'
 import { useAuth } from '../../auth/AuthContext'
 import { useData } from '../../data/DataContext'
 import { dataMode } from '../../data/dataMode'
+import { useOrg, useOrgName } from '../../data/OrgContext'
 import { fmtDate } from '../../lib/format'
 
 export default function Header() {
   const ds = useData()
   const auth = useAuth()
+  const org = useOrg()
+  const orgName = useOrgName()
 
   return (
     <header className="app-header sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-200 bg-white/90 px-8 backdrop-blur">
       <div className="flex items-baseline gap-3">
-        <span className="text-sm font-semibold text-slate-900">Northbridge Mutual</span>
+        {org && org.orgs.length > 1 ? (
+          <select
+            aria-label="Switch organization"
+            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-semibold text-slate-900 focus:border-indigo-400 focus:outline-none"
+            value={org.activeOrg.id}
+            onChange={(e) => org.setActiveOrg(e.target.value)}
+          >
+            {org.orgs.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-sm font-semibold text-slate-900">{orgName}</span>
+        )}
         <span className="text-xs text-slate-500">
           Activity window: {fmtDate(ds.rangeStart)} – {fmtDate(ds.rangeEnd)}
         </span>

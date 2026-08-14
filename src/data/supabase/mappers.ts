@@ -255,7 +255,21 @@ const bySortOrder = <T extends { sort_order: number }>(a: T, b: T) => a.sort_ord
 const byTimestampThenId = <T extends { timestamp: string; id: string }>(a: T, b: T) =>
   a.timestamp.localeCompare(b.timestamp) || a.id.localeCompare(b.id)
 
-export function fromRows(rows: DataSetRows, generatedAt: string): DataSet {
+export interface FromRowsOptions {
+  /**
+   * 'seed-fixtures' (default): departments/costCenters come from the demo
+   * vocabulary constants — keeps the seed round-trip byte-identical.
+   * 'derived': computed from the org's own data — what live workspaces use,
+   * since every prospect brings their own org chart and cost centers.
+   */
+  dimensions?: 'seed-fixtures' | 'derived'
+}
+
+export function fromRows(
+  rows: DataSetRows,
+  generatedAt: string,
+  options: FromRowsOptions = {},
+): DataSet {
   const versionsByAgent = new Map<string, AgentVersionRow[]>()
   for (const v of rows.agentVersions) {
     const list = versionsByAgent.get(v.agent_id) ?? []
@@ -374,6 +388,14 @@ export function fromRows(rows: DataSetRows, generatedAt: string): DataSet {
     taskDays.length > 0 ? taskDays.reduce((a, b) => (a < b ? a : b)) : fallbackDay
   const rangeEnd = taskDays.length > 0 ? taskDays.reduce((a, b) => (a > b ? a : b)) : fallbackDay
 
+  const derived = options.dimensions === 'derived'
+  const departments = derived
+    ? [...new Set(agents.map((a) => a.department).filter(Boolean))].sort()
+    : DEPARTMENTS
+  const costCenters = derived
+    ? [...new Set(tasks.map((t) => t.costCenter).filter(Boolean))].sort()
+    : [...COST_CENTERS]
+
   return {
     generatedAt,
     rangeStart,
@@ -383,8 +405,8 @@ export function fromRows(rows: DataSetRows, generatedAt: string): DataSet {
     policies,
     deviations,
     approvals,
-    departments: DEPARTMENTS,
-    costCenters: [...COST_CENTERS],
+    departments,
+    costCenters,
   }
 }
 

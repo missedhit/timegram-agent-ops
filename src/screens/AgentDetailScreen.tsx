@@ -76,8 +76,11 @@ export default function AgentDetailScreen() {
   }
 
   const { perf, activity30, cost90, deviations, recentTasks, policies } = view
-  const overBudget = perf.costUsd > agent.monthlyBudgetUsd
-  const budgetPct = Math.round((perf.costUsd / agent.monthlyBudgetUsd) * 100)
+  // Agents without a configured budget (e.g. auto-registered) never flag and
+  // never divide by zero.
+  const hasBudget = agent.monthlyBudgetUsd > 0
+  const overBudget = hasBudget && perf.costUsd > agent.monthlyBudgetUsd
+  const budgetPct = hasBudget ? Math.round((perf.costUsd / agent.monthlyBudgetUsd) * 100) : 0
 
   return (
     <div>
@@ -110,7 +113,11 @@ export default function AgentDetailScreen() {
         <StatCard
           label="Spend · last 30 days"
           value={fmtUsd(perf.costUsd)}
-          sub={`${budgetPct}% of ${fmtUsd(agent.monthlyBudgetUsd)} monthly budget`}
+          sub={
+            hasBudget
+              ? `${budgetPct}% of ${fmtUsd(agent.monthlyBudgetUsd)} monthly budget`
+              : 'No monthly budget set'
+          }
           tone={overBudget ? 'alert' : 'default'}
         />
         <StatCard
@@ -126,7 +133,11 @@ export default function AgentDetailScreen() {
         <StatCard
           label={`Cost per ${agent.unitLabel}`}
           value={perf.units > 0 ? fmtUsdCents(perf.costPerUnit) : '—'}
-          sub={`vs ${fmtUsdCents(agent.humanBaselineUsdPerUnit)} human baseline`}
+          sub={
+            agent.humanBaselineUsdPerUnit > 0
+              ? `vs ${fmtUsdCents(agent.humanBaselineUsdPerUnit)} human baseline`
+              : 'No human baseline set'
+          }
         />
       </div>
 
@@ -137,7 +148,10 @@ export default function AgentDetailScreen() {
           </Card>
 
           <Card title="Cost trend" subtitle="Daily spend · last 90 days">
-            <CostTrendChart data={cost90} budgetPerDay={agent.monthlyBudgetUsd / 30} />
+            <CostTrendChart
+              data={cost90}
+              budgetPerDay={hasBudget ? agent.monthlyBudgetUsd / 30 : undefined}
+            />
           </Card>
 
           <Card

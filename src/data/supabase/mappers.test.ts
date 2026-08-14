@@ -79,6 +79,32 @@ describe('supabase row mappers', () => {
     }
   })
 
+  it('derived dimensions come from the org data, not the demo vocabulary', () => {
+    const rows = toRows(original)
+    const ds = fromRows(rows, original.generatedAt, { dimensions: 'derived' })
+    const expectedDepts = [...new Set(original.agents.map((a) => a.department))].sort()
+    const expectedCcs = [...new Set(original.tasks.map((t) => t.costCenter))].sort()
+    expect(ds.departments).toEqual(expectedDepts)
+    expect(ds.costCenters).toEqual(expectedCcs)
+
+    // A single-department prospect org derives exactly its own vocabulary.
+    const onlyClaims = {
+      ...rows,
+      agents: rows.agents.filter((a) => a.department === 'Claims'),
+      agentVersions: [],
+      agentPolicies: [],
+      policies: [],
+      tasks: rows.tasks.filter((t) =>
+        rows.agents.some((a) => a.id === t.agent_id && a.department === 'Claims'),
+      ),
+      deviations: [],
+      approvals: [],
+    }
+    const claimsDs = fromRows(onlyClaims, original.generatedAt, { dimensions: 'derived' })
+    expect(claimsDs.departments).toEqual(['Claims'])
+    expect(claimsDs.costCenters.length).toBeGreaterThan(0)
+  })
+
   it('round-trips optional fields (paused/retired agents, unresolved deviations)', () => {
     const paused = roundTripped.agents.find((a) => a.status === 'paused')
     expect(paused?.pausedAt).toBeDefined()

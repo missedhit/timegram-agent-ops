@@ -1,6 +1,7 @@
 import { Bot, CircleDollarSign, FileCheck2, ScrollText, ShieldCheck } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { dataMode } from '../../data/dataMode'
+import { useOrgName } from '../../data/OrgContext'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Agent Registry', icon: Bot, end: true },
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
 ]
 
 export default function Sidebar() {
+  const orgName = useOrgName()
   return (
     <aside className="app-sidebar fixed inset-y-0 left-0 z-20 flex w-60 flex-col border-r border-slate-200 bg-white">
       <div className="flex items-center gap-2.5 border-b border-slate-200 px-5 py-4">
@@ -44,7 +46,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-slate-200 px-5 py-3 text-xs text-slate-400">
-        Northbridge Mutual
+        {orgName}
         <br />
         {dataMode === 'supabase' ? 'Live environment' : 'Demo environment · Seed data'}
       </div>

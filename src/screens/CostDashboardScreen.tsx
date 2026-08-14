@@ -105,7 +105,11 @@ export default function CostDashboardScreen() {
         <StatCard
           label="Budget alerts"
           value={String(view.alerts.length)}
-          sub={`Of ${fmtUsd(view.totalBudget)} combined monthly budget`}
+          sub={
+            view.totalBudget > 0
+              ? `Of ${fmtUsd(view.totalBudget)} combined monthly budget`
+              : 'No agent budgets set yet'
+          }
           tone={view.alerts.length > 0 ? 'alert' : 'default'}
         />
       </div>
@@ -113,7 +117,11 @@ export default function CostDashboardScreen() {
       <div className="mb-4 grid grid-cols-3 gap-4">
         <div className="col-span-2">
           <Card title="Spend trend" subtitle="Daily spend, all agents · last 90 days">
-            <CostTrendChart data={view.trend90} budgetPerDay={view.totalBudget / 30} height={220} />
+            <CostTrendChart
+              data={view.trend90}
+              budgetPerDay={view.totalBudget > 0 ? view.totalBudget / 30 : undefined}
+              height={220}
+            />
           </Card>
         </div>
         <Card title="Budget alerts" subtitle="Spend vs monthly budget · last 30 days">

@@ -4,6 +4,7 @@ import FilterSelect from '../components/ui/FilterSelect'
 import PageHeader from '../components/ui/PageHeader'
 import { DeviationStatusBadge, EnforcementBadge } from '../components/ui/badges'
 import { useData } from '../data/DataContext'
+import { useOrgName } from '../data/OrgContext'
 import { evidencePack, lastNDays, rangeFromDates } from '../data/selectors'
 import { dayOf } from '../lib/orgTime'
 import { fmtDate, fmtDateTime, fmtDateTimeFull, fmtUsd, fmtUsdCents } from '../lib/format'
@@ -69,6 +70,7 @@ function EmptyNote({ children }: { children: string }) {
 
 export default function AuditExportScreen() {
   const ds = useData()
+  const orgName = useOrgName()
   const [agentId, setAgentId] = useState(ds.agents[0]?.id ?? '')
   const [preset, setPreset] = useState('30')
   const [customStart, setCustomStart] = useState(dayOf(lastNDays(ds, 30).from))
@@ -93,7 +95,24 @@ export default function AuditExportScreen() {
     [ds],
   )
 
-  if (!pack) return null
+  if (!pack) {
+    // A fresh workspace has no agents to export yet.
+    return (
+      <div>
+        <PageHeader
+          title="Audit Export"
+          subtitle="Assemble a defensible evidence pack for one agent over one period"
+        />
+        <div className="mx-auto max-w-xl rounded-lg border border-slate-200 bg-white p-8 text-center">
+          <div className="text-base font-semibold text-slate-900">No agents to export yet</div>
+          <p className="mt-2 text-sm text-slate-600">
+            Evidence packs are built from agent activity. Connect an agent from the Agent
+            Registry and this screen will populate.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const { agent, performance: perf } = pack
   const versions = pack.versionsInEffect
@@ -177,7 +196,7 @@ export default function AuditExportScreen() {
               <p className="mt-0.5 text-sm text-slate-600">{agent.purpose}</p>
             </div>
             <div className="shrink-0 text-right text-xs text-slate-500">
-              <div className="text-sm font-semibold text-slate-900">Northbridge Mutual</div>
+              <div className="text-sm font-semibold text-slate-900">{orgName}</div>
               <div className="mt-0.5">Timegram Agent Ops</div>
               <div className="mt-1.5">Generated {fmtDateTimeFull(ds.generatedAt)}</div>
               <div>
@@ -415,7 +434,7 @@ export default function AuditExportScreen() {
         </Section>
 
         <footer className="evidence-section border-t border-slate-200 px-8 py-4 text-[11px] leading-relaxed text-slate-500">
-          Prepared by Timegram Agent Ops for Northbridge Mutual · Agent {agent.name} · Period{' '}
+          Prepared by Timegram Agent Ops for {orgName} · Agent {agent.name} · Period{' '}
           {fmtDate(pack.periodStart)} – {fmtDate(pack.periodEnd)} · Generated{' '}
           {fmtDateTimeFull(ds.generatedAt)} · Metadata-only record; no prompt or output content
           is stored by the platform. Demonstration data.

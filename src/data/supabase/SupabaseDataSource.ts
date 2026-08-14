@@ -8,7 +8,6 @@ import type { DataSet } from '../../domain/types'
 import type { DataSource } from '../DataContext'
 import { getSupabaseClient } from './client'
 import {
-  DEMO_ORG_ID,
   fromRows,
   type AgentPolicyRow,
   type AgentRow,
@@ -34,11 +33,11 @@ const PAGE = 1000
  * is pinned by the filter) also means rows inserted mid-load by the ingest
  * endpoint land after the cursor instead of shifting it.
  */
-async function fetchAll<T>(table: string, orderCols: string[]): Promise<T[]> {
+async function fetchAll<T>(table: string, orgId: string, orderCols: string[]): Promise<T[]> {
   const supabase = await getSupabaseClient()
   const rows: T[] = []
   for (let from = 0; ; from += PAGE) {
-    let query = supabase.from(table).select('*').eq('org_id', DEMO_ORG_ID)
+    let query = supabase.from(table).select('*').eq('org_id', orgId)
     for (const col of orderCols) query = query.order(col)
     const { data, error } = await query.range(from, from + PAGE - 1)
     if (error) throw new Error(`Failed to load ${table}: ${error.message}`)
@@ -47,27 +46,32 @@ async function fetchAll<T>(table: string, orderCols: string[]): Promise<T[]> {
   }
 }
 
-export const supabaseDataSource: DataSource = {
-  async load(): Promise<DataSet> {
-    const [agents, agentVersions, policies, agentPolicies, tasks, deviations, approvals] =
-      await Promise.all([
-        fetchAll<AgentRow>('agents', ['id']),
-        fetchAll<AgentVersionRow>('agent_versions', ['agent_id', 'version']),
-        fetchAll<PolicyRow>('policies', ['id']),
-        fetchAll<AgentPolicyRow>('agent_policies', ['agent_id', 'policy_id']),
-        fetchAll<TaskRow>('tasks', ['id']),
-        fetchAll<DeviationRow>('deviations', ['id']),
-        fetchAll<ApprovalRow>('approvals', ['id']),
-      ])
-    const rows: DataSetRows = {
-      agents,
-      agentVersions,
-      policies,
-      agentPolicies,
-      tasks,
-      deviations,
-      approvals,
-    }
-    return fromRows(rows, new Date().toISOString())
-  },
+/** DataSource for one organization's workspace. */
+export function makeSupabaseDataSource(orgId: string): DataSource {
+  return {
+    async load(): Promise<DataSet> {
+      const [agents, agentVersions, policies, agentPolicies, tasks, deviations, approvals] =
+        await Promise.all([
+          fetchAll<AgentRow>('agents', orgId, ['id']),
+          fetchAll<AgentVersionRow>('agent_versions', orgId, ['agent_id', 'version']),
+          fetchAll<PolicyRow>('policies', orgId, ['id']),
+          fetchAll<AgentPolicyRow>('agent_policies', orgId, ['agent_id', 'policy_id']),
+          fetchAll<TaskRow>('tasks', orgId, ['id']),
+          fetchAll<DeviationRow>('deviations', orgId, ['id']),
+          fetchAll<ApprovalRow>('approvals', orgId, ['id']),
+        ])
+      const rows: DataSetRows = {
+        agents,
+        agentVersions,
+        policies,
+        agentPolicies,
+        tasks,
+        deviations,
+        approvals,
+      }
+      // Live workspaces derive their own vocabulary — every org brings its
+      // own departments and cost centers.
+      return fromRows(rows, new Date().toISOString(), { dimensions: 'derived' })
+    },
+  }
 }

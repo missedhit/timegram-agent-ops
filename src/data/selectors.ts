@@ -157,6 +157,9 @@ export interface UnitEconomics {
 export function unitEconomics(ds: DataSet, range: DateRange): UnitEconomics[] {
   const result: UnitEconomics[] = []
   for (const agent of ds.agents) {
+    // No human baseline configured (e.g. auto-registered agents) → no ROI
+    // claim to make; a $0 baseline would render as negative savings.
+    if (agent.humanBaselineUsdPerUnit <= 0) continue
     const byProcess = new Map<string, { units: number; costUsd: number }>()
     for (const t of filterTasks(ds, { agentId: agent.id, range })) {
       const row = byProcess.get(t.businessProcess) ?? { units: 0, costUsd: 0 }
