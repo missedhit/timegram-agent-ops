@@ -14,5 +14,13 @@
     "noEmit": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "connector/src", "connector/example", "vite.config.ts"]
+  "include": [
+    "src",
+    "connector/src",
+    "connector/example",
+    "vite.config.ts",
+    "supabase/functions/**/*contract.ts",
+    "supabase/functions/**/*contract.test.ts",
+    "supabase/functions/**/vectors.test.ts"
+  ]
 }

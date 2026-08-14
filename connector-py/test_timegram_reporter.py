@@ -259,6 +259,30 @@ class ReporterNetworkTest(unittest.TestCase):
         self.assertFalse(result.accepted)
         self.assertEqual(len(transport.calls), 3)
 
+    def test_null_2xx_body_is_treated_as_failure(self):
+        # TS does `(await res.json()).id` — property access on null throws,
+        # landing in the retry path. Python must not quietly accept.
+        transport = StubTransport([(200, "null")])
+        result = make_reporter(transport).report(**VALID_TASK)
+        self.assertFalse(result.accepted)
+        self.assertEqual(len(transport.calls), 3)
+
+    def test_nan_2xx_body_is_treated_as_failure(self):
+        # JSON.parse rejects the NaN/Infinity literals; json.loads accepts
+        # them by default and must be told not to.
+        for body in ("NaN", "Infinity", "-Infinity"):
+            transport = StubTransport([(200, body)])
+            result = make_reporter(transport).report(**VALID_TASK)
+            self.assertFalse(result.accepted, body)
+
+    def test_non_dict_json_2xx_body_is_accepted_without_id(self):
+        # `.id` on a string/array is undefined in JS, not an error.
+        for body in ('"ok"', "[1, 2]", "42"):
+            transport = StubTransport([(200, body)])
+            result = make_reporter(transport).report(**VALID_TASK)
+            self.assertTrue(result.accepted, body)
+            self.assertIsNone(result.id, body)
+
     def test_broken_on_error_hook_is_swallowed(self):
         transport = StubTransport([(500, "boom")])
 

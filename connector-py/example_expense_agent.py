@@ -22,8 +22,10 @@ from timegram_reporter import MetadataContractError, TimegramReporter
 
 
 def load_env_file(path):
-    """Minimal KEY=VALUE loader (stdlib only); existing env vars win."""
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
+    """Minimal KEY=VALUE loader (stdlib only); existing env vars win.
+    utf-8-sig: PowerShell redirects write a BOM by default, which would
+    otherwise silently corrupt the first key."""
+    for line in Path(path).read_text(encoding="utf-8-sig").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
@@ -70,7 +72,8 @@ def main(argv):
         # How a policy departure reaches the compliance screens (policy ids
         # come from the workspace's Policies screen).
         index = argv.index("--report-deviation")
-        policy_id = argv[index + 1] if len(argv) > index + 1 else "pol-starter-1"
+        has_id = len(argv) > index + 1 and not argv[index + 1].startswith("--")
+        policy_id = argv[index + 1] if has_id else "pol-starter-1"
         result = reporter.report_deviation(
             policy_id=policy_id,
             description="Approved a $12,400 expense batch without human sign-off; flagged for review",

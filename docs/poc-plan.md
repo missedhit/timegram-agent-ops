@@ -1,15 +1,21 @@
 # PoC environment — working plan (resume here)
 
 > This is the live working plan, committed so any session on any device can pick
-> it up. Last updated 2026-08-14 (later session). **M0, M1, M2 are DONE and
-> their adversarial reviews are ABSORBED** (10 confirmed findings fixed and
-> re-verified live: per-org timezones with an orgs.timezone column, live
-> evidence packs no longer stamped "Demonstration data", ghost-agent
-> prevention on rejected deviations, fail-closed register lookup +
-> non-destructive upserts, truthful key revocation, org-switch URL reset,
-> user-switch loading reset). **Next action: M3 (Python reporter + golden
-> vectors).** Note for M3: per-org timezone now exists — the CONNECT handout
-> and org:create default to America/New_York, --timezone flag available.
+> it up. Last updated 2026-08-14 (third session). **M0–M3 are DONE and their
+> adversarial reviews are ABSORBED.** M3 landed the Python reporter + 92 golden
+> vectors (branch coverage across all three contracts) with TS/Python parity
+> proven three ways: shared vectors in both CI suites, a 9,000-case seeded
+> differential fuzz (identical verdicts AND identical in-order error lists),
+> and the live Acme checkpoint (Python example registered ag-fin-expense-py
+> and filled the Acme Work Log). M3's review confirmed 9 findings, all fixed:
+> CPython 4300-digit int limit crash on hour-24 fractions (digit scan now),
+> Object.keys array-index enumeration order mirrored in _js_key_order, 2xx
+> null/NaN body verdict parity in _send, 7 unpinned vector branches added,
+> BOM-safe env loading (utf-8-sig), --report-deviation flag-swallow guard,
+> and supabase contract/test files added to tsc's include.
+> **Next action: M4 (hosted live app on Cloudflare Pages) — founder-gated:
+> needs the Cloudflare account + DNS clicks in the M4 section. The repo-side
+> M4 pieces (_redirects, set-auth-config.mjs) can be authored from anywhere.**
 
 ## Where things stand right now
 
@@ -18,13 +24,12 @@
 | Public demo | https://demo.timegram.io — done, seed mode, auto-deploys from `main` |
 | Live app | Works on `localhost:5173` only, single hard-wired org. **Not yet hosted.** |
 | Supabase | Project `eaeqqipehxxaypvzdxcv`: schema + RLS + magic-link auth + ingest function, all live |
-| Connectors | TypeScript SDK in `connector/` (works end-to-end); Python not started |
-| Tests | 96 green (`npm test`), CI on every push |
-| M0 | ✅ Done — empty-workspace crash, DST-gap convergence, guardrail bucketing all fixed + regression-tested; live org reseeded |
+| Connectors | TypeScript SDK in `connector/` AND Python (`connector-py/timegram_reporter.py`, stdlib-only, copy-paste distribution) — parity enforced by shared golden vectors in CI |
+| Tests | 214 vitest + 32 unittest green, both suites in CI on every push |
+| M0–M3 | ✅ Done, adversarial reviews absorbed (M0: timezone fixes; M1+M2: 10 findings; M3: 9 findings) |
 
-**Next action: M1** (multi-tenant app — OrgProvider, free-form departments,
-empty-org UX). M0's review is folded into the M1 adversarial review since M0's
-fixes were themselves produced and empirically validated by a review.
+**Next action: M4** (hosted live app on Cloudflare Pages — founder gate for
+the account + DNS; see M4 section for the exact clicks).
 
 ## Resuming from another device (phone, web, another laptop)
 

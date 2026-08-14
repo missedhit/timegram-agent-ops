@@ -122,7 +122,9 @@ def _is_valid_timestamp(t):
     frac = m.group(1) or ""
     if hh == 24:
         # ES Date allows hour 24 only as exactly 24:00:00 with a zero fraction.
-        if mm != 0 or ss != 0 or (frac and int(frac[1:]) != 0):
+        # Digit scan, not int(): CPython 3.11+ caps int-from-string at 4300
+        # digits and would raise on a longer (regex-legal) fraction.
+        if mm != 0 or ss != 0 or (frac and frac[1:].lstrip("0") != ""):
             return False
     elif hh > 23 or mm > 59 or ss > 59:
         return False
@@ -247,8 +249,30 @@ _DEVIATION_ALLOWED_KEYS = frozenset((*_DEVIATION_REQUIRED_STRINGS, "timestamp"))
 _DEVIATION_CONTENT_KEYS = _BASE_CONTENT_KEYS | {"instructions", "evidence"}
 
 
+def _is_array_index_key(key):
+    """A canonical ECMAScript array-index key: ASCII digits, no leading zero
+    (except "0" itself), value <= 2**32 - 2."""
+    return (
+        isinstance(key, str)
+        and key.isascii()
+        and key.isdigit()
+        and (key == "0" or not key.startswith("0"))
+        and len(key) <= 10
+        and int(key) <= 4294967294
+    )
+
+
+def _js_key_order(obj):
+    """Object.keys enumeration order: array-index keys first in ascending
+    numeric order, then the remaining keys in insertion order — so error
+    LISTS match the TS validators, not just error sets."""
+    indices = sorted((k for k in obj if _is_array_index_key(k)), key=int)
+    rest = [k for k in obj if not _is_array_index_key(k)]
+    return indices + rest
+
+
 def _scan_keys(obj, content_keys, allowed_keys, errors):
-    for key in obj:
+    for key in _js_key_order(obj):
         if key in content_keys:
             errors.append(_content_msg(key))
         elif key not in allowed_keys:
@@ -406,6 +430,12 @@ def _strip_none(fields):
     return {k: v for k, v in fields.items() if v is not None}
 
 
+def _reject_json_constant(name):
+    """Python's json.loads accepts NaN/Infinity by default; JSON.parse (the
+    TS SDK's parser) does not — reject them so both SDKs retry such bodies."""
+    raise ValueError(f"invalid JSON literal: {name}")
+
+
 def _default_transport(url, body, headers, timeout):
     """POST via urllib. Returns (status, response_text); raises on transport
     failure. HTTPError is a response, not a failure — the caller decides."""
@@ -546,7 +576,12 @@ class TimegramReporter:
             try:
                 status, text = self._transport(url, body, headers, self.timeout)
                 if 200 <= status < 300:
-                    data = json.loads(text)
+                    # Mirror the TS SDK's `(await res.json()).id`: JSON.parse
+                    # rejects NaN/Infinity, and `.id` on null throws — both
+                    # land in the retry path, so they must raise here too.
+                    data = json.loads(text, parse_constant=_reject_json_constant)
+                    if data is None:
+                        raise ValueError("null response body has no id")
                     server_id = data.get("id") if isinstance(data, dict) else None
                     return ReportResult(True, id=server_id)
                 last_error = f"HTTP {status}: {text[:300]}"
