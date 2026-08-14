@@ -4,6 +4,7 @@ import FilterSelect from '../components/ui/FilterSelect'
 import PageHeader from '../components/ui/PageHeader'
 import { DeviationStatusBadge, EnforcementBadge } from '../components/ui/badges'
 import { useData } from '../data/DataContext'
+import { dataMode } from '../data/dataMode'
 import { useOrgName } from '../data/OrgContext'
 import { evidencePack, lastNDays, rangeFromDates } from '../data/selectors'
 import { dayOf } from '../lib/orgTime'
@@ -437,7 +438,10 @@ export default function AuditExportScreen() {
           Prepared by Timegram Agent Ops for {orgName} · Agent {agent.name} · Period{' '}
           {fmtDate(pack.periodStart)} – {fmtDate(pack.periodEnd)} · Generated{' '}
           {fmtDateTimeFull(ds.generatedAt)} · Metadata-only record; no prompt or output content
-          is stored by the platform. Demonstration data.
+          is stored by the platform.
+          {/* Only the public seed demo carries the demo stamp — a live
+              workspace's evidence pack is a real record. */}
+          {dataMode !== 'supabase' && ' Demonstration data.'}
         </footer>
       </article>
     </div>

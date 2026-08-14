@@ -95,12 +95,22 @@ async function main() {
 
   const revokeId = option('revoke')
   if (revokeId) {
-    const { error } = await supabase
+    // .select() forces the affected rows back — a zero-row match must be an
+    // error, never a false "revoked" message during a leaked-key incident.
+    const { data, error } = await supabase
       .from('api_keys')
       .update({ revoked_at: new Date().toISOString() })
       .eq('org_id', org.id)
       .eq('id', revokeId)
+      .is('revoked_at', null)
+      .select('id')
     if (error) throw new Error(error.message)
+    if (!data || data.length === 0) {
+      console.error(
+        `No active key ${revokeId} in "${org.name}" — nothing revoked. Check the id with --list.`,
+      )
+      process.exit(1)
+    }
     console.log(`Revoked key ${revokeId} for "${org.name}". Takes effect immediately.`)
     return
   }

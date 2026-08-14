@@ -15,6 +15,8 @@ import { useAuth } from '../auth/AuthContext'
 export interface OrgSummary {
   id: string
   name: string
+  /** IANA business timezone the workspace reports in. */
+  timezone: string
 }
 
 interface OrgState {
@@ -45,7 +47,7 @@ export function pickActiveOrg(orgs: OrgSummary[], storedId: string | null): OrgS
   return orgs.find((o) => o.id === storedId) ?? orgs[0]
 }
 
-export function OrgProvider({ children }: { children: (orgId: string) => ReactNode }) {
+export function OrgProvider({ children }: { children: (org: OrgSummary) => ReactNode }) {
   const auth = useAuth()
   const [state, setState] = useState<
     | { status: 'loading' }
@@ -57,12 +59,16 @@ export function OrgProvider({ children }: { children: (orgId: string) => ReactNo
 
   useEffect(() => {
     let mounted = true
+    // The signed-in user can change while this provider stays mounted
+    // (cross-tab auth events); never leave the previous user's workspace
+    // rendered while the new user's memberships load.
+    setState({ status: 'loading' })
     ;(async () => {
       try {
         const supabase = await getSupabaseClient()
         const { data, error } = await supabase
           .from('org_members')
-          .select('org_id, orgs ( id, name )')
+          .select('org_id, orgs ( id, name, timezone )')
           .order('org_id')
         if (error) throw new Error(error.message)
         const orgs: OrgSummary[] = (data ?? [])
@@ -110,12 +116,15 @@ export function OrgProvider({ children }: { children: (orgId: string) => ReactNo
   const setActiveOrg = (id: string) => {
     if (!state.orgs.some((o) => o.id === id)) return
     localStorage.setItem(STORAGE_KEY, id)
+    // Org-scoped URL state (routes, agent/filter params) must not replay
+    // against the next org; the keyed remount reads window.location as-is.
+    window.history.replaceState(null, '', import.meta.env.BASE_URL)
     setState({ ...state, activeId: id })
   }
 
   return (
     <OrgContext.Provider value={{ orgs: state.orgs, activeOrg: active, setActiveOrg }}>
-      {children(active.id)}
+      {children(active)}
     </OrgContext.Provider>
   )
 }

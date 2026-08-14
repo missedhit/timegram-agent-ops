@@ -7,13 +7,9 @@ import App from './App'
 import AuthGate from './auth/AuthGate'
 import { DataProvider, seedDataSource } from './data/DataContext'
 import { dataMode } from './data/dataMode'
-import { OrgProvider } from './data/OrgContext'
+import { OrgProvider, type OrgSummary } from './data/OrgContext'
 import { makeSupabaseDataSource } from './data/supabase/SupabaseDataSource'
-import { LIVE_ORG_TIMEZONE, setOrgTimeZone } from './lib/orgTime'
-
-// Live workspaces report in the org's business timezone so every member sees
-// identical numbers; the seed demo stays viewer-local so it is always fresh.
-setOrgTimeZone(dataMode === 'supabase' ? LIVE_ORG_TIMEZONE : 'local')
+import { setOrgTimeZone } from './lib/orgTime'
 
 const routedApp = (
   <BrowserRouter basename={import.meta.env.BASE_URL}>
@@ -21,9 +17,18 @@ const routedApp = (
   </BrowserRouter>
 )
 
-/** One workspace: a stable per-org data source, remounted when the org changes. */
-function LiveWorkspace({ orgId }: { orgId: string }) {
-  const source = useMemo(() => makeSupabaseDataSource(orgId), [orgId])
+/**
+ * One workspace: a stable per-org data source, remounted when the org changes
+ * (key={org.id}). Each org reports in its own business timezone so every
+ * member sees identical numbers; the seed demo stays viewer-local ('local'
+ * default) so it is always fresh.
+ */
+function LiveWorkspace({ org }: { org: OrgSummary }) {
+  const source = useMemo(() => {
+    // Before the data loads, so day-bucketing and display agree with the org.
+    setOrgTimeZone(org.timezone)
+    return makeSupabaseDataSource(org.id)
+  }, [org.id, org.timezone])
   return <DataProvider source={source}>{routedApp}</DataProvider>
 }
 
@@ -32,7 +37,7 @@ createRoot(document.getElementById('root')!).render(
     {/* Seed mode (including the public demo) stays auth-free by construction. */}
     {dataMode === 'supabase' ? (
       <AuthGate>
-        <OrgProvider>{(orgId) => <LiveWorkspace key={orgId} orgId={orgId} />}</OrgProvider>
+        <OrgProvider>{(org) => <LiveWorkspace key={org.id} org={org} />}</OrgProvider>
       </AuthGate>
     ) : (
       <DataProvider source={seedDataSource}>{routedApp}</DataProvider>

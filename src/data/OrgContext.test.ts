@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { pickActiveOrg, type OrgSummary } from './OrgContext'
 
 const ORGS: OrgSummary[] = [
-  { id: 'org-a', name: 'Acme Test' },
-  { id: 'org-b', name: 'Northbridge Mutual' },
+  { id: 'org-a', name: 'Acme Test', timezone: 'America/Chicago' },
+  { id: 'org-b', name: 'Northbridge Mutual', timezone: 'America/New_York' },
 ]
 
 describe('pickActiveOrg', () => {

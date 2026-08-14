@@ -29,8 +29,15 @@ const option = (name: string) => {
 
 const name = option('name')
 const ownerEmail = option('owner-email')
+const timezone = option('timezone') ?? 'America/New_York'
 if (!name || !ownerEmail) {
-  console.error('Usage: npm run org:create -- --name "Acme Corp" --owner-email jane@acme.com')
+  console.error(
+    'Usage: npm run org:create -- --name "Acme Corp" --owner-email jane@acme.com [--timezone America/Chicago]',
+  )
+  process.exit(1)
+}
+if (!Intl.supportedValuesOf('timeZone').includes(timezone)) {
+  console.error(`"${timezone}" is not a valid IANA timezone (e.g. America/New_York).`)
   process.exit(1)
 }
 
@@ -48,7 +55,7 @@ async function main() {
   }
 
   const orgId = randomUUID()
-  const { error: orgError } = await supabase.from('orgs').insert({ id: orgId, name })
+  const { error: orgError } = await supabase.from('orgs').insert({ id: orgId, name, timezone })
   if (orgError) throw new Error(`orgs: ${orgError.message}`)
 
   const { data: users, error: usersError } = await supabase.auth.admin.listUsers()
@@ -67,8 +74,9 @@ async function main() {
   if (memberError) throw new Error(`org_members: ${memberError.message}`)
 
   console.log(`Created organization "${name}"`)
-  console.log(`  org id : ${orgId}`)
-  console.log(`  owner  : ${ownerEmail} (${user.id})`)
+  console.log(`  org id   : ${orgId}`)
+  console.log(`  owner    : ${ownerEmail} (${user.id})`)
+  console.log(`  timezone : ${timezone}`)
 }
 
 main().catch((err) => {

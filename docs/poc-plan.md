@@ -1,13 +1,15 @@
 # PoC environment — working plan (resume here)
 
 > This is the live working plan, committed so any session on any device can pick
-> it up. Last updated 2026-08-14 (later session). **M0, M1, M2 are DONE** —
-> multi-tenant app (org switcher, free-form departments, empty-org UX) and
-> multi-tenant ingest (per-org hashed API keys, /register + /deviation routes,
-> auto-registration) are live and verified end-to-end against the real project
-> ("Acme Test" org built entirely through the API). Adversarial reviews of
-> M0–M2 pending/being absorbed. **Next action: M3 (Python reporter + golden
-> vectors).**
+> it up. Last updated 2026-08-14 (later session). **M0, M1, M2 are DONE and
+> their adversarial reviews are ABSORBED** (10 confirmed findings fixed and
+> re-verified live: per-org timezones with an orgs.timezone column, live
+> evidence packs no longer stamped "Demonstration data", ghost-agent
+> prevention on rejected deviations, fail-closed register lookup +
+> non-destructive upserts, truthful key revocation, org-switch URL reset,
+> user-switch loading reset). **Next action: M3 (Python reporter + golden
+> vectors).** Note for M3: per-org timezone now exists — the CONNECT handout
+> and org:create default to America/New_York, --timezone flag available.
 
 ## Where things stand right now
 
