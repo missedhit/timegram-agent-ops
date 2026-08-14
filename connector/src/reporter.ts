@@ -15,8 +15,16 @@ import {
   validateIngestEvent,
   type IngestEvent,
 } from '../../supabase/functions/ingest/contract'
+import {
+  validateRegisterEvent,
+  type RegisterEvent,
+} from '../../supabase/functions/ingest/register-contract'
+import {
+  validateDeviationEvent,
+  type DeviationEvent,
+} from '../../supabase/functions/ingest/deviation-contract'
 
-export type { IngestEvent }
+export type { DeviationEvent, IngestEvent, RegisterEvent }
 
 /** Per-event input; agent id and defaults-covered fields may come from the reporter. */
 export type ReportInput = Omit<IngestEvent, 'agent_id' | 'business_process' | 'cost_center'> &
@@ -60,6 +68,10 @@ export interface TimegramReporterOptions {
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+/** Explicitly-undefined keys must not clobber reporter defaults. */
+const stripUndefined = (obj: object) =>
+  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined))
+
 export class TimegramReporter {
   private readonly opts: Required<Pick<TimegramReporterOptions, 'ingestUrl' | 'apiKey' | 'agentId'>> &
     TimegramReporterOptions
@@ -77,20 +89,43 @@ export class TimegramReporter {
    * { accepted: false } (never throws) for network/server failures.
    */
   async report(input: ReportInput): Promise<ReportResult> {
-    // Explicitly-undefined keys must not clobber reporter defaults.
-    const provided = Object.fromEntries(
-      Object.entries(input).filter(([, v]) => v !== undefined),
-    )
     const candidate = {
       agent_id: this.opts.agentId,
       ...this.opts.defaults,
-      ...provided,
+      ...stripUndefined(input),
     }
 
     const result = validateIngestEvent(candidate)
     if (!result.ok) throw new MetadataContractError(result.errors)
-    const event = result.event
+    return this.send(this.opts.ingestUrl, result.event)
+  }
 
+  /**
+   * Register (or enrich) this reporter's agent in the workspace registry —
+   * name, department, owner, budget, human baseline. Same metadata-only
+   * contract; same never-throw network semantics.
+   */
+  async registerAgent(meta: Omit<RegisterEvent, 'agent_id'> & { agent_id?: string }): Promise<ReportResult> {
+    const candidate = { agent_id: this.opts.agentId, ...stripUndefined(meta) }
+    const result = validateRegisterEvent(candidate)
+    if (!result.ok) throw new MetadataContractError(result.errors)
+    return this.send(`${this.opts.ingestUrl}/register`, result.event)
+  }
+
+  /**
+   * Report a policy deviation (arrives 'open'; resolution happens in the
+   * workspace, not via API).
+   */
+  async reportDeviation(
+    input: Omit<DeviationEvent, 'agent_id'> & { agent_id?: string },
+  ): Promise<ReportResult> {
+    const candidate = { agent_id: this.opts.agentId, ...stripUndefined(input) }
+    const result = validateDeviationEvent(candidate)
+    if (!result.ok) throw new MetadataContractError(result.errors)
+    return this.send(`${this.opts.ingestUrl}/deviation`, result.event)
+  }
+
+  private async send(url: string, event: object): Promise<ReportResult> {
     const fetchImpl = this.opts.fetchImpl ?? fetch
     const sleep = this.opts.sleepImpl ?? defaultSleep
     const maxRetries = this.opts.maxRetries ?? 2
@@ -99,7 +134,7 @@ export class TimegramReporter {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) await sleep(250 * 2 ** (attempt - 1))
       try {
-        const res = await fetchImpl(this.opts.ingestUrl, {
+        const res = await fetchImpl(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': this.opts.apiKey },
           body: JSON.stringify(event),
@@ -117,7 +152,7 @@ export class TimegramReporter {
     }
 
     const error = new Error(`Timegram report failed: ${lastError}`)
-    ;(this.opts.onError ?? ((e: Error) => console.warn(e.message)))(error, event)
+    ;(this.opts.onError ?? ((e: Error) => console.warn(e.message)))(error, event as IngestEvent)
     return { accepted: false, error: lastError }
   }
 

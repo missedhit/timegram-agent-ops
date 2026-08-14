@@ -66,6 +66,32 @@ content-carrying fields (`prompt`, `output`, `messages`, `content`,
 
 Try it: `npm run example:agent -- --try-content` from the repo root.
 
+## Registration and deviations
+
+```ts
+// Register (or enrich) the agent in the workspace registry — idempotent,
+// typically called at startup:
+await timegram.registerAgent({
+  name: 'Expense Audit Agent',
+  department: 'Finance',
+  owner_name: 'Marcus Feld',
+  unit_label: 'report',
+  monthly_budget_usd: 400,
+  human_baseline_usd_per_unit: 4.5,
+})
+
+// Report a policy departure (policy ids are on the workspace's Policies
+// screen). Deviations arrive 'open'; resolution happens in the workspace.
+await timegram.reportDeviation({
+  policy_id: 'pol-starter-1',
+  description: 'Approved a $12,400 batch without human sign-off; flagged',
+})
+```
+
+An event that names an agent the registry hasn't seen auto-registers a minimal
+agent (marked as such) so a first report never bounces — enrich it later with
+`registerAgent`.
+
 ## Failure behavior
 
 Reporting must never break your agent. Contract violations throw

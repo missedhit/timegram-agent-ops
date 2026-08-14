@@ -11,7 +11,7 @@ export default defineConfig({
     // contract test runs here (index.ts uses Deno globals and stays out).
     include: [
       'src/**/*.test.ts',
-      'supabase/functions/**/contract.test.ts',
+      'supabase/functions/**/*contract.test.ts',
       'connector/src/**/*.test.ts',
     ],
   },

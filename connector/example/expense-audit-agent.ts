@@ -28,6 +28,32 @@ const auditBatch = async (reports: number) => {
 }
 
 async function main() {
+  // Register (or re-enrich) this agent in the workspace registry at startup —
+  // idempotent, and how the Registry learns names, owners, and budgets.
+  await reporter.registerAgent({
+    name: 'Expense Audit Agent',
+    department: 'Finance',
+    purpose: 'Audits employee expense reports against travel & expense policy',
+    owner_name: 'Marcus Feld',
+    model: 'Claude Haiku 4.5',
+    model_provider: 'Anthropic',
+    unit_label: 'report',
+    monthly_budget_usd: 400,
+    human_baseline_usd_per_unit: 4.5,
+  })
+
+  if (process.argv.includes('--report-deviation')) {
+    // How a policy departure reaches the compliance screens (policy ids come
+    // from the workspace's Policies screen).
+    const result = await reporter.reportDeviation({
+      policy_id: process.argv[process.argv.indexOf('--report-deviation') + 1] ?? 'pol-starter-1',
+      description:
+        'Approved a $12,400 expense batch without human sign-off; flagged for review',
+    })
+    console.log('Deviation reported:', JSON.stringify(result))
+    return
+  }
+
   if (process.argv.includes('--try-content')) {
     // What happens if an integration tries to attach model I/O:
     try {
