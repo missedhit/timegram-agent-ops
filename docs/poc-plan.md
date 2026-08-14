@@ -13,16 +13,23 @@
 > null/NaN body verdict parity in _send, 7 unpinned vector branches added,
 > BOM-safe env loading (utf-8-sig), --report-deviation flag-swallow guard,
 > and supabase contract/test files added to tsc's include.
-> **Next action: M4 (hosted live app on Cloudflare Pages) — founder-gated:
-> needs the Cloudflare account + DNS clicks in the M4 section. The repo-side
-> M4 pieces (_redirects, set-auth-config.mjs) can be authored from anywhere.**
+> **M4 is DONE**: founder connected the repo to Cloudflare Pages and added the
+> agentworkforce.timegram.io custom domain (zone was already on Cloudflare);
+> set-auth-config.mjs ran (site_url → hosted app, localhost:5173 still
+> allowed). Verified: /costs deep link cold-loads 200 with the auth gate and
+> zero console errors, demo pinned-URL unchanged ($11,900), app.timegram.io
+> untouched (still the pre-existing product). Only untestable-from-CLI bit:
+> founder's own phone login + org switch — flagged to founder, not blocking.
+> **Next action: M5 (onboarding kit + ops hygiene).** The blocking
+> founder-gated item before any real prospect is Resend SMTP (built-in
+> Supabase email is ~2/hr); key rotation is the other hygiene gate.
 
 ## Where things stand right now
 
 | Thing | State |
 | --- | --- |
 | Public demo | https://demo.timegram.io — done, seed mode, auto-deploys from `main` |
-| Live app | Works on `localhost:5173` only, single hard-wired org. **Not yet hosted.** |
+| Live app | **https://agentworkforce.timegram.io — hosted on Cloudflare Pages, auto-deploys from `main`** (localhost:5173 still works for dev) |
 | Supabase | Project `eaeqqipehxxaypvzdxcv`: schema + RLS + magic-link auth + ingest function, all live |
 | Connectors | TypeScript SDK in `connector/` AND Python (`connector-py/timegram_reporter.py`, stdlib-only, copy-paste distribution) — parity enforced by shared golden vectors in CI |
 | Tests | 214 vitest + 32 unittest green, both suites in CI on every push |
