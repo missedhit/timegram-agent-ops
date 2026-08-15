@@ -10,6 +10,7 @@ export interface HandoutOptions {
   orgName: string
   appUrl: string
   ingestUrl: string
+  mcpUrl: string
   rawKey: string
 }
 
@@ -20,7 +21,7 @@ export const orgSlug = (name: string): string =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
-export function handoutMarkdown({ orgName, appUrl, ingestUrl, rawKey }: HandoutOptions): string {
+export function handoutMarkdown({ orgName, appUrl, ingestUrl, mcpUrl, rawKey }: HandoutOptions): string {
   return `# Connect your agents — ${orgName}
 
 Welcome to Timegram Agent Ops. This page has everything needed to see your
@@ -108,6 +109,61 @@ await timegram.report({
   units: 12,
 })
 \`\`\`
+
+## Connect via MCP (fastest — a config snippet, no code)
+
+Point any MCP-capable agent tool at your workspace — the quickest way to see
+data flowing, and ideal for agents that live inside Claude Code or Cursor.
+Treat it as the quick-connect path: for production, audit-grade telemetry use
+the SDK sections above — an LLM reporting on itself is discretionary, while
+the SDK reports measured values from code.
+
+Claude Code, one command (available in every project — the key is stored in
+your user config, never in a repo):
+
+\`\`\`bash
+claude mcp add --scope user --transport http timegram ${mcpUrl} --header "Authorization: Bearer ${rawKey}"
+\`\`\`
+
+Project \`.mcp.json\` (checked into git — keep the key in an env var, never
+inline; \`"type": "http"\` is required):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "timegram": {
+      "type": "http",
+      "url": "${mcpUrl}",
+      "headers": { "Authorization": "Bearer \${TIMEGRAM_API_KEY}" }
+    }
+  }
+}
+\`\`\`
+
+Set \`TIMEGRAM_API_KEY\` to the key under "Your workspace" above. Cursor
+(\`~/.cursor/mcp.json\`) takes the same block without the \`"type"\` line, with
+\`"Bearer \${env:TIMEGRAM_API_KEY}"\` as the header value.
+
+Claude Desktop (its local config is stdio-only — bridge via mcp-remote,
+needs Node):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "timegram": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "${mcpUrl}", "--header", "Authorization:\${AUTH_HEADER}"],
+      "env": { "AUTH_HEADER": "Bearer ${rawKey}" }
+    }
+  }
+}
+\`\`\`
+
+(No space after \`Authorization:\` — the full value lives in the env var
+because some clients fail to escape spaces in args on Windows.)
+
+Once connected, ask your agent to call \`workspace_status\` — it answers with
+your workspace name and live counts, proving the connection end to end.
 
 ## What gets recorded
 

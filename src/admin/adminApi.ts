@@ -38,7 +38,8 @@ export interface CreatedOrg {
 export interface DeletionReport {
   deleted: true
   org: { id: string; name: string }
-  inventory: Record<string, number>
+  /** null = the count could not be determined (a transient failure), not 0. */
+  inventory: Record<string, number | null>
   orphaned_users: string[]
 }
 

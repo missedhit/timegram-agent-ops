@@ -9,7 +9,7 @@
  *                          [--timezone America/Chicago]
  *
  * The handout (git-ignored — it contains the raw API key) is everything the
- * prospect needs: app URL, ingest URL, key, TS/Python/curl snippets. Total
+ * prospect needs: app URL, ingest URL, key, TS/Python/curl/MCP snippets. Total
  * runtime is a few seconds; see docs/poc-runbook.md for the full 10-minute
  * onboarding flow around it.
  */
@@ -33,6 +33,7 @@ if (!url || !serviceKey) {
   process.exit(1)
 }
 const ingestUrl = `${url.replace(/\/+$/, '')}/functions/v1/ingest`
+const mcpUrl = `${url.replace(/\/+$/, '')}/functions/v1/mcp`
 
 const option = (name: string) => {
   const idx = process.argv.indexOf(`--${name}`)
@@ -40,15 +41,19 @@ const option = (name: string) => {
   return value?.startsWith('--') ? undefined : value
 }
 
-const name = option('name')
-const ownerEmail = option('owner-email')
+const nameArg = option('name')
+const ownerEmailArg = option('owner-email')
 const timezone = option('timezone') ?? 'America/New_York'
-if (!name || !ownerEmail) {
+if (!nameArg || !ownerEmailArg) {
   console.error(
     'Usage: npm run org:create -- --name "Acme Corp" --owner-email jane@acme.com [--timezone America/Chicago]',
   )
   process.exit(1)
 }
+// Re-bind after the guard so the async closures below see the narrowed
+// string types (narrowing does not flow into functions declared later).
+const name = nameArg
+const ownerEmail = ownerEmailArg
 if (!Intl.supportedValuesOf('timeZone').includes(timezone)) {
   console.error(`"${timezone}" is not a valid IANA timezone (e.g. America/New_York).`)
   process.exit(1)
@@ -135,7 +140,7 @@ async function main() {
   const handoutPath = `${handoutDir}/CONNECT-${slug}.md`
   writeFileSync(
     handoutPath,
-    handoutMarkdown({ orgName: name, appUrl: APP_URL, ingestUrl, rawKey }),
+    handoutMarkdown({ orgName: name, appUrl: APP_URL, ingestUrl, mcpUrl, rawKey }),
     'utf-8',
   )
 

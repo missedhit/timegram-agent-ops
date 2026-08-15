@@ -21,6 +21,28 @@
 > (auth chain, lifecycle, ingest parity with a dashboard-issued key,
 > Northbridge protection) + full UI click-through with a throwaway admin.
 >
+> **M7 (fourth session): remote MCP quick-connect.** Prospects can now
+> connect MCP-capable agents (Claude Code, Cursor, VS Code, Windsurf,
+> OpenAI Agents SDK) with a pasted config snippet — a new zero-dependency
+> `mcp` edge function speaks JSON-RPC / Streamable HTTP (stateless,
+> JSON-only, deliberately lenient on Accept and Mcp-* headers) and exposes
+> report_task / register_agent / report_deviation (validated locally with
+> the SHARED ingest contracts, then forwarded to ingest with the caller's
+> key — identical MetadataContractError text to the SDKs) plus read-only
+> workspace_status (org name + live counts, the "it's wired up" proof on a
+> call). Auth: `Authorization: Bearer tgk_…` documented + `x-api-key`
+> alias; initialize/tools/list are unauthenticated by design; tool auth
+> failures are isError results the calling model can read. All 92 golden
+> vectors run through full tools/call dispatch (parity now enforced across
+> TS SDK, Python SDK, AND MCP); `supabase/config.toml` codifies
+> `[functions.mcp] verify_jwt = false`; `npm run check:mcp` is the deployed
+> tripwire for the dashboard Verify-JWT toggle. The handout gained a
+> "Connect via MCP" section (committed-file snippets use env vars, never
+> raw keys; Claude Desktop bridges via `npx mcp-remote`). Positioning is
+> enforced in every doc and tool description: MCP = quick-connect/demo
+> path; the SDKs remain production, audit-grade telemetry. 2026-07-28
+> protocol support is deferred — revisit when Claude products announce GA.
+>
 > **Remaining founder gates (all in the runbook as numbered steps):**
 > 1. Resend SMTP before the first prospect login (built-in email ~2/hr) —
 >    runbook "Pre-prospect hygiene §1".
@@ -31,6 +53,21 @@
 > 3. The full incognito acceptance run from the runbook alone (after SMTP):
 >    onboard a throwaway org end to end in under 10 minutes.
 > 4. Small M4 leftover: phone login + org-switch spot check.
+> 5. M7 acceptance: `npx -y @modelcontextprotocol/inspector` against the
+>    deployed mcp URL (tools/list shows 4, workspace_status returns
+>    Northbridge counts), then real Claude Code via the handout one-liner —
+>    workspace_status + a report_task visible on the live Work Log; confirm
+>    Dashboard → Edge Functions → `mcp` → Verify JWT is OFF (re-check after
+>    every deploy; `npm run check:mcp` also catches it).
+> 6. **M7 pending redeploy**: `mcp` + `admin` must be redeployed once the
+>    access token is refreshed (deploys started 401ing mid-session —
+>    presumably the hygiene-§2 token rotation; update `.env.local`
+>    `SUPABASE_ACCESS_TOKEN` first). The live `mcp` works and passes
+>    `check:mcp`, but lacks the final-review hardening (error boundary,
+>    tool-throw guard); the live `admin` handout still emits the Claude Code
+>    one-liner without `--scope user`. Commands in the runbook Deploys
+>    section; also delete the leftover smoke auth user
+>    `mcp-smoke@example.invalid` (Dashboard → Authentication → Users).
 
 ## Where things stand right now
 
@@ -40,9 +77,10 @@
 | Live app | **https://agentworkforce.timegram.io — hosted on Cloudflare Pages, auto-deploys from `main`** (localhost:5173 still works for dev) |
 | Supabase | Project `eaeqqipehxxaypvzdxcv`: schema + RLS + magic-link auth + ingest function, all live |
 | Connectors | TypeScript SDK in `connector/` AND Python (`connector-py/timegram_reporter.py`, stdlib-only, copy-paste distribution) — parity enforced by shared golden vectors in CI |
-| Tests | 214 vitest + 32 unittest green, both suites in CI on every push |
+| MCP quick-connect | **`supabase/functions/mcp` — remote MCP server (report_task / register_agent / report_deviation / workspace_status) over the same contracts**; handout carries config snippets; `npm run check:mcp` |
+| Tests | 382 vitest + 32 unittest green, both suites in CI on every push |
 | Onboarding kit | **UI-driven: Platform Admin screen at /admin** (create org + handout, keys, export, delete) backed by the `admin` edge function; CLI scripts (`org:create` etc.) as fallback; docs/poc-runbook.md is UI-first |
-| M0–M6 | ✅ All done, adversarial reviews absorbed (M0: timezone fixes; M1+M2: 10 findings; M3: 9; M5: 11; M6: pending review) |
+| M0–M7 | ✅ All done, adversarial reviews absorbed (M0: timezone fixes; M1+M2: 10 findings; M3: 9; M5: 11; M6: pending review; M7: 17 findings across two reviews, all absorbed) |
 
 **Next action: none in this plan — operate via docs/poc-runbook.md.** The
 founder gates listed in the header are the only outstanding work.

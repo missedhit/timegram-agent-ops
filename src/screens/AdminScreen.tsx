@@ -457,7 +457,7 @@ export default function AdminScreen() {
           <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
             Deleted <span className="font-semibold">{deletion.org.name}</span> —{' '}
             {Object.entries(deletion.inventory)
-              .map(([table, n]) => `${n} ${table}`)
+              .map(([table, n]) => `${n ?? 'unknown'} ${table}`)
               .join(', ')}
             .
             {deletion.orphaned_users.length > 0 && (

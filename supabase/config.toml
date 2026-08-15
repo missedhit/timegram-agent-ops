@@ -415,9 +415,15 @@ enabled = true
 
 # Per-function JWT verification: ingest authenticates via x-api-key (raw
 # keys are not JWTs); admin requires a session JWT at the gateway as
-# defense-in-depth (the in-function platform_admins check is the boundary).
+# defense-in-depth (the in-function platform_admins check is the boundary);
+# mcp carries the same raw keys in Authorization: Bearer / x-api-key, so the
+# gateway must pass them through untouched. The dashboard toggle can silently
+# override these settings — `npm run check:mcp` catches that for mcp.
 [functions.ingest]
 verify_jwt = false
 
 [functions.admin]
 verify_jwt = true
+
+[functions.mcp]
+verify_jwt = false

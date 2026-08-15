@@ -22,8 +22,9 @@ the bottom of this page — custom SMTP and key rotation.
    seconds: org, 5 starter policies, the owner's login, and an API key.
 
 2. The key panel appears **once**: click **Download handout** (their
-   `CONNECT-<org>.md` with app URL, ingest URL, key, and curl / Python / TS
-   snippets), skim it, then **Dismiss** — the key cannot be retrieved
+   `CONNECT-<org>.md` with app URL, ingest URL, key, curl / Python / TS
+   snippets, and MCP config snippets for Claude Code / Cursor / Claude
+   Desktop), skim it, then **Dismiss** — the key cannot be retrieved
    again, only replaced.
 
 3. Email the handout to the prospect (however you share secrets),
@@ -38,7 +39,14 @@ the bottom of this page — custom SMTP and key rotation.
    auto-register on first report: the Work Log fills immediately; Registry,
    Costs, Policies, and Audit follow from the same events.
 
-5. Done. The prospect connects their real agents by copying
+5. MCP quick-connect (optional, 2 minutes — great on a call): the handout's
+   "Connect via MCP" section has a one-line `claude mcp add …` command.
+   Paste it, then ask the agent to call `workspace_status` — it answers
+   with the workspace name and live counts, and `report_task` calls land on
+   the Work Log like any SDK event. Position MCP as the demo path;
+   production telemetry ships the SDK (next step).
+
+6. Done. The prospect connects their real agents by copying
    `connector-py/timegram_reporter.py` (Python, stdlib-only) or using
    `connector/src` (TypeScript, from a repo clone) next to their agent code.
 
@@ -58,7 +66,10 @@ put the handout's two values in a scratch `acme.env` file (git-ignored via
 
 **Where the server logs are (founder gate — dashboard):**
 Supabase Dashboard → project `eaeqqipehxxaypvzdxcv` → Edge Functions →
-`ingest` → Logs. Every rejected event logs its reason there. The `admin`
+`ingest` → Logs. Every rejected event logs its reason there — including
+events arriving via MCP (`mcp` validates locally and forwards to ingest
+with the caller's key; the `mcp` logs carry only `[mcp] …` upstream-failure
+lines). The `admin`
 function's Logs are the audit trail for dashboard actions (one `[admin]`
 line per create/issue/revoke/delete, with the acting user id).
 
@@ -72,6 +83,9 @@ line per create/issue/revoke/delete, with the acting user id).
 | Event accepted but agent shows "Auto-registered from first report" | Normal | Enrich via `/register` (see their handout / SDK `register_agent`) |
 | Login shows "Signups not allowed for otp" | The email is not an onboarded auth user — sign-in never creates accounts | Check spelling; onboard them (org:create adds the owner) or add the user in Dashboard → Authentication → Users |
 | Magic link never arrives (for a KNOWN user) | SMTP not configured, or rate-limited | The pre-prospect SMTP gate below; built-in Supabase email is ~2/hour |
+| MCP server shows "failed" in the client | Wrong URL — or the dashboard "Verify JWT" toggle got re-enabled (the gateway then 401s before our code runs) | `npm run check:mcp` says which; if it's the toggle: Dashboard → Edge Functions → `mcp` → Details → turn Verify JWT off |
+| MCP tool call answers "invalid or missing API key" | Key typo'd or revoked — or an old Claude Code build dropping headers on tool calls (known upstream bugs) | Verify the key with `npm run org:key -- --org "X" --list`; have the prospect update Claude Code and re-add the server |
+| MCP connects but no Timegram tools appear | Client cached a stale tool list | Reconnect the server in the client (Claude Code: `/mcp` → reconnect); `npm run check:mcp` confirms the deployed server lists all four tools |
 
 **Key rotation (leaked or routine):** Platform Admin → the org's **Manage**
 → **Keys** → issue the new key (label it, e.g. `rotated-2026-08`), hand it
@@ -112,10 +126,17 @@ npx supabase functions deploy ingest --project-ref eaeqqipehxxaypvzdxcv --no-ver
 npx supabase functions deploy admin --project-ref eaeqqipehxxaypvzdxcv
 ```
 
-ingest must skip gateway JWT verification (agents authenticate with
-`x-api-key`, not JWTs); admin keeps it as defense-in-depth — its real gate
-is the in-function platform_admins check. Both are also recorded in
-`supabase/config.toml`.
+```bash
+npx supabase functions deploy mcp --project-ref eaeqqipehxxaypvzdxcv --no-verify-jwt
+```
+
+ingest and mcp must skip gateway JWT verification (agents authenticate
+with raw API keys, not JWTs — mcp carries them in `Authorization: Bearer`,
+which the gateway would otherwise misread as a JWT); admin keeps it as
+defense-in-depth — its real gate is the in-function platform_admins check.
+All three are recorded in `supabase/config.toml`. After any mcp deploy run
+`npm run check:mcp` — it catches the dashboard Verify JWT toggle silently
+re-enabling.
 
 ## Backups (Free tier has none)
 
@@ -235,3 +256,4 @@ session during setup. Before the first prospect:
 | Reseed live org | — | `npm run seed:supabase` |
 | Auth URLs (after domain changes) | — | `node scripts/set-auth-config.mjs` |
 | Health check | — | `npm run check:supabase` |
+| MCP health check | — | `npm run check:mcp` |

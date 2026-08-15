@@ -95,12 +95,17 @@ const randomKey = () => {
 const orgToday = (timezone: string) =>
   new Date().toLocaleDateString('en-CA', { timeZone: timezone })
 
-/** Row count without fetching rows (PostgREST exact count via Content-Range). */
-async function countRows(filter: string): Promise<number> {
+/**
+ * Row count without fetching rows (PostgREST exact count via Content-Range).
+ * null = the count could not be determined (non-2xx / missing header): callers
+ * must NOT treat that as zero — a transient failure here otherwise flags an
+ * in-use account as an orphan or understates a deletion inventory.
+ */
+async function countRows(filter: string): Promise<number | null> {
   const res = await rest(filter, { method: 'HEAD', headers: { Prefer: 'count=exact' } })
-  const range = res.headers.get('content-range') ?? ''
-  const total = Number(range.split('/')[1])
-  return Number.isFinite(total) ? total : 0
+  if (!res.ok) return null
+  const total = Number((res.headers.get('content-range') ?? '').split('/')[1])
+  return Number.isFinite(total) ? total : null
 }
 
 // ---------------------------------------------------------------------------
@@ -145,9 +150,11 @@ interface OrgRow {
   created_at: string
 }
 
+/** Throws on a transient lookup failure so callers 502 rather than reporting a
+ *  false 404 "no such org" for an org that exists. null = genuinely absent. */
 async function getOrg(orgId: string): Promise<OrgRow | null> {
   const res = await rest(`orgs?select=id,name,timezone,created_at&id=eq.${orgId}&limit=1`)
-  if (!res.ok) return null
+  if (!res.ok) throw new Error(`org lookup failed: ${(await res.text()).slice(0, 200)}`)
   const rows = (await res.json()) as OrgRow[]
   return rows[0] ?? null
 }
@@ -182,7 +189,9 @@ async function listOrgs(): Promise<{ status: number; body: unknown }> {
       return {
         ...org,
         protected: org.name === PROTECTED_ORG,
-        counts: { members, agents, tasks },
+        // Display counts only — a transient blip showing 0 in the refreshable
+        // list is harmless (unlike the deletion inventory / orphan check).
+        counts: { members: members ?? 0, agents: agents ?? 0, tasks: tasks ?? 0 },
         keys: keys
           .filter((k) => k.org_id === org.id)
           .map(({ id, label, created_at, revoked_at }) => ({ id, label, created_at, revoked_at })),
@@ -284,6 +293,7 @@ async function createOrg(payload: unknown, caller: Caller): Promise<{ status: nu
   const keyId = ((await keyRes.json()) as Array<{ id: string }>)[0]?.id
 
   const ingestUrl = `${supabaseUrl()}/functions/v1/ingest`
+  const mcpUrl = `${supabaseUrl()}/functions/v1/mcp`
   console.log(`[admin] create-org org=${orgId} name="${name}" owner=${owner_email} by=${caller.userId}`)
   return {
     status: 201,
@@ -293,7 +303,7 @@ async function createOrg(payload: unknown, caller: Caller): Promise<{ status: nu
       owner_note: ownerNote,
       raw_key: rawKey,
       key_id: keyId,
-      handout_markdown: handoutMarkdown({ orgName: name, appUrl: APP_URL, ingestUrl, rawKey }),
+      handout_markdown: handoutMarkdown({ orgName: name, appUrl: APP_URL, ingestUrl, mcpUrl, rawKey }),
     },
   }
 }
@@ -365,7 +375,9 @@ async function deleteOrg(orgId: string, payload: unknown, caller: Caller) {
     }
   }
 
-  const inventory: Record<string, number> = {}
+  // null (unknown) is preserved, not coerced to 0 — this is the only record
+  // of what was destroyed on the backup-less Free tier.
+  const inventory: Record<string, number | null> = {}
   for (const table of INVENTORY_TABLES) {
     inventory[table] = await countRows(`${table}?org_id=eq.${orgId}`)
   }
@@ -495,6 +507,13 @@ Deno.serve(async (req) => {
     }
   }
 
-  const { status, body } = await route()
-  return json(status, body)
+  try {
+    const { status, body } = await route()
+    return json(status, body)
+  } catch (err) {
+    // A transient lookup failure (e.g. getOrg) must surface as retry-me, not
+    // a false 404 or a naked 500.
+    console.log(`[admin] ERROR sub=${sub} by=${caller.userId}: ${err instanceof Error ? err.message : String(err)}`)
+    return json(502, { error: 'a database lookup failed — please retry' })
+  }
 })

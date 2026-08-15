@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "check:supabase": "node scripts/check-supabase.mjs",
+    "check:mcp": "node scripts/check-mcp.mjs",
     "seed:supabase": "tsx scripts/seed-supabase.ts",
     "emit:task": "tsx scripts/emit-task.ts",
     "example:agent": "node --env-file=.env.local --import=tsx connector/example/expense-audit-agent.ts",

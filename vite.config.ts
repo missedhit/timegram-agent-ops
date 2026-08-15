@@ -14,6 +14,7 @@ export default defineConfig({
       'supabase/functions/**/*contract.test.ts',
       'supabase/functions/**/vectors.test.ts',
       'supabase/functions/**/handout.test.ts',
+      'supabase/functions/mcp/server.test.ts',
       'connector/src/**/*.test.ts',
     ],
   },
