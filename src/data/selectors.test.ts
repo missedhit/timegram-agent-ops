@@ -116,7 +116,7 @@ describe('chart series and KPIs agree with the underlying task list', () => {
 
   it('dailySeries totals equal direct aggregation (charts = cards)', () => {
     const range = last90Days(ds)
-    for (const agentId of [undefined, 'ag-clm-fnol', 'ag-sup-refunds']) {
+    for (const agentId of [undefined, 'ag-eng-incident', 'ag-sup-refunds']) {
       const series = dailySeries(ds, range, agentId)
       const tasks = filterTasks(ds, { agentId, range })
       expect(series.reduce((a, p) => a + p.tasks, 0)).toBe(tasks.length)
@@ -139,7 +139,7 @@ describe('audit evidence pack', () => {
   const range = last30Days(ds)
 
   it('totals match the work log for the same agent and period', () => {
-    for (const agentId of ['ag-clm-fnol', 'ag-sup-refunds', 'ag-clm-notify']) {
+    for (const agentId of ['ag-eng-incident', 'ag-sup-refunds', 'ag-eng-notify']) {
       const pack = evidencePack(ds, agentId, range)!
       const tasks = filterTasks(ds, { agentId, range })
       expect(pack.performance.tasks).toBe(tasks.length)
@@ -186,16 +186,16 @@ describe('audit evidence pack', () => {
   })
 
   it('reports the version actually in force, not the current one', () => {
-    const fnol = ds.agents.find((a) => a.id === 'ag-clm-fnol')!
-    const firstVersion = fnol.versionHistory[0]
+    const incident = ds.agents.find((a) => a.id === 'ag-eng-incident')!
+    const firstVersion = incident.versionHistory[0]
     // A period ending before any later upgrade must report the early version.
-    const end = parseLocalDate(fnol.versionHistory[1].date)
+    const end = parseLocalDate(incident.versionHistory[1].date)
     end.setDate(end.getDate() - 1)
     const start = new Date(end)
     start.setDate(start.getDate() - 29)
-    const pack = evidencePack(ds, fnol.id, rangeFromDates(toIsoDate(start), toIsoDate(end)))!
+    const pack = evidencePack(ds, incident.id, rangeFromDates(toIsoDate(start), toIsoDate(end)))!
     expect(pack.versionsInEffect.map((v) => v.version)).toEqual([firstVersion.version])
-    expect(pack.versionsInEffect[0].version).not.toBe(fnol.version)
+    expect(pack.versionsInEffect[0].version).not.toBe(incident.version)
   })
 
   it('returns null for an unknown agent rather than throwing', () => {
@@ -203,7 +203,7 @@ describe('audit evidence pack', () => {
   })
 
   it('produces a usable pack for a quiet period (retired agent, no activity)', () => {
-    const pack = evidencePack(ds, 'ag-clm-notify', range)!
+    const pack = evidencePack(ds, 'ag-eng-notify', range)!
     expect(pack.performance.tasks).toBe(0)
     expect(pack.processBreakdown).toHaveLength(0)
     expect(pack.policyAssignments.length).toBeGreaterThan(0)
@@ -230,15 +230,15 @@ describe('demo narratives survive the calendar', () => {
   // not just on the day it was built.
   const anchors = Array.from({ length: 21 }, (_, i) => new Date(2026, 7, 14 + i))
 
-  it('keeps the FNOL agent visibly over budget on every day of the cycle', () => {
+  it('keeps the Incident Triage Agent visibly over budget on every day of the cycle', () => {
     for (const anchor of anchors) {
       const set = buildDataSet(anchor)
-      const agent = set.agents.find((a) => a.id === 'ag-clm-fnol')!
+      const agent = set.agents.find((a) => a.id === 'ag-eng-incident')!
       const spend = sumCost(filterTasks(set, { agentId: agent.id, range: last30Days(set) }))
       const ratio = spend / agent.monthlyBudgetUsd
       expect(
         ratio,
-        `${anchor.toDateString()}: FNOL at ${Math.round(ratio * 100)}% of budget`,
+        `${anchor.toDateString()}: Incident Triage at ${Math.round(ratio * 100)}% of budget`,
       ).toBeGreaterThan(1.1)
     }
   })
@@ -252,7 +252,7 @@ describe('demo narratives survive the calendar', () => {
     }
   })
 
-  it('always keeps open refund deviations on the Refund & Adjustment Agent', () => {
+  it('always keeps open refund deviations on the Refund & Credit Agent', () => {
     for (const anchor of anchors) {
       const set = buildDataSet(anchor)
       const open = set.deviations.filter(
@@ -358,10 +358,10 @@ describe('selectors stay internally consistent under an org business timezone', 
       expect(series.reduce((a, p) => a + p.tasks, 0)).toBe(tasks.length)
       expect(series.reduce((a, p) => a + p.costUsd, 0)).toBeCloseTo(sumCost(tasks), 6)
 
-      const pack = evidencePack(ds, 'ag-clm-fnol', last30Days(ds))!
-      const fnolTasks = filterTasks(ds, { agentId: 'ag-clm-fnol', range: last30Days(ds) })
-      expect(pack.performance.tasks).toBe(fnolTasks.length)
-      expect(pack.performance.costUsd).toBeCloseTo(sumCost(fnolTasks), 6)
+      const pack = evidencePack(ds, 'ag-eng-incident', last30Days(ds))!
+      const incidentTasks = filterTasks(ds, { agentId: 'ag-eng-incident', range: last30Days(ds) })
+      expect(pack.performance.tasks).toBe(incidentTasks.length)
+      expect(pack.performance.costUsd).toBeCloseTo(sumCost(incidentTasks), 6)
     } finally {
       setOrgTimeZone('local')
     }
@@ -369,8 +369,8 @@ describe('selectors stay internally consistent under an org business timezone', 
 })
 
 describe('demo narratives hold in the generated data', () => {
-  it('FNOL Intake Agent is over its monthly budget (narrative 1)', () => {
-    const status = budgetStatuses(ds).find((b) => b.agent.id === 'ag-clm-fnol')
+  it('Incident Triage Agent is over its monthly budget (narrative 1)', () => {
+    const status = budgetStatuses(ds).find((b) => b.agent.id === 'ag-eng-incident')
     expect(status).toBeDefined()
     expect(status!.flag).toBe('over')
   })
@@ -383,10 +383,10 @@ describe('demo narratives hold in the generated data', () => {
 
   it('concentrates recent deviations in the three problem agents (narrative 2)', () => {
     const recent = agentsWithDeviations(ds, last30Days(ds))
-    expect(recent).toEqual(new Set(['ag-sup-refunds', 'ag-clm-fnol', 'ag-fin-ap']))
+    expect(recent).toEqual(new Set(['ag-sup-refunds', 'ag-eng-incident', 'ag-fin-ap']))
   })
 
-  it('Refund & Adjustment Agent has open refund-threshold deviations', () => {
+  it('Refund & Credit Agent has open refund-threshold deviations', () => {
     const open = ds.deviations.filter(
       (d) =>
         d.agentId === 'ag-sup-refunds' &&

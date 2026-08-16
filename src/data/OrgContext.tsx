@@ -32,7 +32,7 @@ export function useOrg(): OrgState | null {
   return useContext(OrgContext)
 }
 
-const SEED_ORG_NAME = 'Northbridge Mutual'
+const SEED_ORG_NAME = 'Coreline Software'
 
 /** The workspace's display name; the demo company in seed mode. */
 export function useOrgName(): string {

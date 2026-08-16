@@ -88,21 +88,21 @@ describe('supabase row mappers', () => {
     expect(ds.costCenters).toEqual(expectedCcs)
 
     // A single-department prospect org derives exactly its own vocabulary.
-    const onlyClaims = {
+    const onlyEngineering = {
       ...rows,
-      agents: rows.agents.filter((a) => a.department === 'Claims'),
+      agents: rows.agents.filter((a) => a.department === 'Engineering'),
       agentVersions: [],
       agentPolicies: [],
       policies: [],
       tasks: rows.tasks.filter((t) =>
-        rows.agents.some((a) => a.id === t.agent_id && a.department === 'Claims'),
+        rows.agents.some((a) => a.id === t.agent_id && a.department === 'Engineering'),
       ),
       deviations: [],
       approvals: [],
     }
-    const claimsDs = fromRows(onlyClaims, original.generatedAt, { dimensions: 'derived' })
-    expect(claimsDs.departments).toEqual(['Claims'])
-    expect(claimsDs.costCenters.length).toBeGreaterThan(0)
+    const engineeringDs = fromRows(onlyEngineering, original.generatedAt, { dimensions: 'derived' })
+    expect(engineeringDs.departments).toEqual(['Engineering'])
+    expect(engineeringDs.costCenters.length).toBeGreaterThan(0)
   })
 
   it('round-trips optional fields (paused/retired agents, unresolved deviations)', () => {

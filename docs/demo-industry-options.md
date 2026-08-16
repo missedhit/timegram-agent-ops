@@ -1,5 +1,10 @@
 # Demo persona options — replacing (or keeping) the insurance dataset
 
+> **DECISION (2026-08-16): Option A adopted.** The seed demo is re-themed to
+> Coreline Software (B2B SaaS) in the same branch; Northbridge lives on in git
+> history and as the live foundation org's name. Options B and C remain the
+> outbound wedges to validate via discovery calls.
+
 > Written 2026-08-16 in response to the founder question: *"I barely understand
 > the insurance demo data myself. Agents won't be heavily used in such a
 > sensitive industry anyway — what industries actually use agents a lot, feel

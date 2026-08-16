@@ -1,8 +1,8 @@
 # Timegram Agent Ops — demo prototype
 
 The HR + finance + audit layer for AI agents, demonstrated on a fictional
-mid-size P&C insurer (**Northbridge Mutual**) running 14 agents across
-Finance, Support, Sales Ops, Claims, and IT.
+~300-person B2B SaaS company (**Coreline Software**) running 14 agents across
+Finance, Support, Sales Ops, Engineering, and IT.
 
 **Metadata-only by design:** the product records what agents did, when, at
 what cost, and whether policy was followed. Prompt and output contents are
@@ -45,11 +45,11 @@ chrome so the PDF is a clean standalone document.
 
 ## Demo narratives baked into the data
 
-1. **FNOL Intake Agent (Claims)** — ~131% of its monthly budget after an Opus 4.5
-   upgrade plus storm-surge claim volume. Visible on the registry, the cost
-   dashboard's budget alerts, and as a cost curve crossing the budget-pace line
-   on its detail page.
-2. **Refund & Adjustment Agent (Support)** — repeatedly violates "escalate refunds
+1. **Incident Triage Agent (Engineering)** — ~131% of its monthly budget after
+   an Opus 4.5 upgrade plus post-release alert-surge volume. Visible on the
+   registry, the cost dashboard's budget alerts, and as a cost curve crossing
+   the budget-pace line on its detail page.
+2. **Refund & Credit Agent (Support)** — repeatedly violates "escalate refunds
    above $5,000"; recent deviations still open while older ones were resolved.
    The monthly deviation report shows the trend worsening (1 → 4 → 4) under
    log-only enforcement — the natural segue to "switch it to block mode."
@@ -80,8 +80,8 @@ chrome so the PDF is a clean standalone document.
 `npm test` covers determinism, referential integrity, cross-screen numeric
 consistency (per-agent spend sums to the dashboard total; chart series sum to
 the KPI cards; evidence packs match the work log), timezone/DST safety, and the
-demo narratives themselves — if a seed edit ever breaks the "FNOL is over
-budget" story, a test fails.
+demo narratives themselves — if a seed edit ever breaks the "Incident Triage
+is over budget" story, a test fails.
 
 ## Taking this to production
 
