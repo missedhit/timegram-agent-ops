@@ -20,16 +20,14 @@ import { dayOf } from '../../lib/orgTime'
 import {
   AGENT_FIXTURES,
   APPROVAL_TEMPLATES,
-  BROKER_NAMES,
   COST_CENTERS,
+  CUSTOMER_NAMES,
   DEPARTMENT_APPROVERS,
   DEPARTMENTS,
   DEVIATION_FIXTURES,
   GENERIC_APPROVAL_TEMPLATE,
   POLICY_FIXTURES,
-  POLICY_NUMBER_PREFIX,
   type AgentFixture,
-  type CostCenter,
 } from './fixtures'
 
 const WINDOW_DAYS = 90
@@ -100,35 +98,34 @@ const daysAgoToIsoDateTime = (anchor: Date, daysAgo: number, hour: number, minut
 // Reference-number generators for description placeholders
 // ---------------------------------------------------------------------------
 
-const policyNumber = (rng: Rng, costCenter: CostCenter) =>
-  `${POLICY_NUMBER_PREFIX[costCenter]}-${randInt(rng, 10000, 89999)}`
+const accountNumber = (rng: Rng) => `ACCT-${randInt(rng, 10000, 89999)}`
 
-const claimNumber = (rng: Rng, year: number) =>
-  `CLM-${year}-${String(randInt(rng, 1000, 9999)).padStart(5, '0')}`
+const incidentNumber = (rng: Rng, year: number) =>
+  `INC-${year}-${String(randInt(rng, 1000, 9999)).padStart(5, '0')}`
 
 const invoiceNumber = (rng: Rng) => `INV-${randInt(rng, 80000, 99999)}`
 
 /** Plural nouns that can follow a generated count in task templates. */
 const SINGULAR_NOUNS: Record<string, string> = {
   invoices: 'invoice',
-  claims: 'claim',
-  opportunities: 'opportunity',
   exceptions: 'exception',
   payments: 'payment',
   reports: 'report',
-  complaints: 'complaint',
+  transactions: 'transaction',
+  positions: 'position',
+  escalations: 'escalation',
+  items: 'item',
   quotes: 'quote',
-  policies: 'policy',
-  appointments: 'appointment',
-  documents: 'document',
-  pages: 'page',
+  subscriptions: 'subscription',
+  sections: 'section',
+  alerts: 'alert',
+  regressions: 'regression',
+  incidents: 'incident',
+  traces: 'trace',
   tickets: 'ticket',
   accounts: 'account',
   notifications: 'notification',
-  policyholders: 'policyholder',
-  transactions: 'transaction',
-  items: 'item',
-  positions: 'position',
+  customers: 'customer',
 }
 
 /** "1 opportunities flagged" → "1 opportunity flagged". */
@@ -140,17 +137,17 @@ const fixPlurals = (text: string) =>
 function fillTemplate(
   rng: Rng,
   text: string,
-  ctx: { units: number; flagged: number; costCenter: CostCenter; year: number },
+  ctx: { units: number; flagged: number; year: number },
 ): string {
   return fixPlurals(
     text
       .replace('{b}', String(randInt(rng, 1000, 9899)))
       .replace('{u}', String(ctx.units))
       .replace('{f}', String(ctx.flagged))
-      .replace('{pol}', policyNumber(rng, ctx.costCenter))
-      .replace('{claim}', claimNumber(rng, ctx.year))
+      .replace('{acct}', accountNumber(rng))
+      .replace('{inc}', incidentNumber(rng, ctx.year))
       .replace('{inv}', invoiceNumber(rng))
-      .replace('{brk}', pick(rng, BROKER_NAMES)),
+      .replace('{cust}', pick(rng, CUSTOMER_NAMES)),
   )
 }
 
@@ -252,7 +249,6 @@ function generateTasksForAgent(fx: AgentFixture, anchor: Date, rng: Rng): WorkTa
         description: fillTemplate(rng, template.text, {
           units,
           flagged,
-          costCenter,
           year: timestamp.getFullYear(),
         }),
         businessProcess: template.process,
@@ -340,9 +336,6 @@ function generateApprovals(tasks: WorkTask[], agents: Agent[], rng: Rng): Approv
       if (idx % 2 !== 0) return
       const approverInfo = DEPARTMENT_APPROVERS[agent.department]
       const template = templates.length > 0 ? pick(rng, templates) : GENERIC_APPROVAL_TEMPLATE
-      const costCenter = COST_CENTERS.includes(task.costCenter as CostCenter)
-        ? (task.costCenter as CostCenter)
-        : 'Corporate'
       const when = new Date(new Date(task.timestamp).getTime() + randInt(rng, 1, 5) * 60 * 60 * 1000)
 
       approvals.push({
@@ -354,8 +347,8 @@ function generateApprovals(tasks: WorkTask[], agents: Agent[], rng: Rng): Approv
         approverRole: approverInfo.role,
         description: template
           .replace('{amt}', randInt(rng, 5100, 13900).toLocaleString('en-US'))
-          .replace('{pol}', policyNumber(rng, costCenter))
-          .replace('{claim}', claimNumber(rng, when.getFullYear()))
+          .replace('{acct}', accountNumber(rng))
+          .replace('{inc}', incidentNumber(rng, when.getFullYear()))
           .replace('{inv}', invoiceNumber(rng)),
       })
     })

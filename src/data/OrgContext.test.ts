@@ -3,7 +3,7 @@ import { pickActiveOrg, type OrgSummary } from './OrgContext'
 
 const ORGS: OrgSummary[] = [
   { id: 'org-a', name: 'Acme Test', timezone: 'America/Chicago' },
-  { id: 'org-b', name: 'Northbridge Mutual', timezone: 'America/New_York' },
+  { id: 'org-b', name: 'Coreline Software', timezone: 'America/New_York' },
 ]
 
 describe('pickActiveOrg', () => {

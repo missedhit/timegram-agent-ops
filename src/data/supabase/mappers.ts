@@ -29,7 +29,15 @@ import type {
 import { dayOf } from '../../lib/orgTime'
 import { COST_CENTERS, DEPARTMENTS } from '../seed/fixtures'
 
-/** The demo tenant. Fixed so reseeding is idempotent. */
+/**
+ * The live foundation tenant. Fixed so reseeding is idempotent. The name
+ * intentionally still says Northbridge Mutual even though the seed demo now
+ * plays Coreline Software: the deployed org row carries this name, and the
+ * delete-protection guards (scripts/org-delete.ts PROTECTED_ORG, the admin
+ * edge function, the platform_admins bootstrap migration) all match on it.
+ * Renaming the live org is a coordinated change across those spots plus a
+ * reseed — not a side effect of a fixture edit.
+ */
 export const DEMO_ORG_ID = '00000000-0000-4000-8000-000000000001'
 export const DEMO_ORG_NAME = 'Northbridge Mutual'
 

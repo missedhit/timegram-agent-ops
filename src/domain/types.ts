@@ -11,7 +11,7 @@
 
 /**
  * Free-form: every organization brings its own org chart. The demo dataset
- * uses Finance / Support / Sales Ops / Claims / IT.
+ * uses Finance / Support / Sales Ops / Engineering / IT.
  */
 export type Department = string
 
@@ -59,7 +59,7 @@ export interface Agent {
   retiredAt?: string // ISO date, only when status === 'retired'
   monthlyBudgetUsd: number
   policyIds: string[]
-  /** Business unit of work this agent produces, e.g. "invoice", "claim". */
+  /** Business unit of work this agent produces, e.g. "invoice", "alert". */
   unitLabel: string
   /** What the same unit of work costs when a human does it, for ROI cards. */
   humanBaselineUsdPerUnit: number
@@ -75,7 +75,7 @@ export interface WorkTask {
   outcome: TaskOutcome
   durationSec: number
   costUsd: number
-  /** Business units completed in this task (invoices, claims, tickets…). */
+  /** Business units completed in this task (invoices, alerts, tickets…). */
   units: number
   /** Secondary detail only — never a primary label in the UI. */
   tokens: number

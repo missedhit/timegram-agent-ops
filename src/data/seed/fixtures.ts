@@ -1,16 +1,17 @@
 /**
- * Hand-authored seed facts for the demo company: Northbridge Mutual, a
- * mid-size P&C insurer running 14 AI agents under Timegram Agent Ops.
+ * Hand-authored seed facts for the demo company: Coreline Software, a
+ * ~300-person B2B SaaS company running 14 AI agents under Timegram Agent Ops.
  *
  * Everything time-based is expressed in "days ago" so the dataset always
  * renders relative to today and never looks stale. `generate.ts` converts
  * these fixtures plus a seeded random stream into the full DataSet.
  *
  * Baked-in demo narratives:
- *  1. FNOL Intake Agent (Claims) — cost trending ~40% over budget after a
- *     model upgrade + storm-surge volume ramp in the last 4 weeks.
- *  2. Refund & Adjustment Agent (Support) — repeatedly violates the
- *     "escalate refunds above $5,000" policy; recent deviations still open.
+ *  1. Incident Triage Agent (Engineering) — cost trending ~40% over budget
+ *     after a model upgrade + post-release alert-volume ramp in the last
+ *     4 weeks.
+ *  2. Refund & Credit Agent (Support) — repeatedly violates the "escalate
+ *     refunds above $5,000" policy; recent deviations still open.
  *  3. AP Invoice Agent (Finance) — milder duplicate-invoice deviations so
  *     the feed doesn't look staged around two agents.
  */
@@ -25,35 +26,25 @@ import type {
   RiskLevel,
 } from '../../domain/types'
 
-export const DEPARTMENTS: Department[] = ['Finance', 'Support', 'Sales Ops', 'Claims', 'IT']
+export const DEPARTMENTS: Department[] = ['Finance', 'Support', 'Sales Ops', 'Engineering', 'IT']
 
 export const COST_CENTERS = [
-  'Personal Auto',
-  'Homeowners',
-  'Commercial Property',
-  'Workers Comp',
-  'Specialty Lines',
+  'Core Platform',
+  'Analytics',
+  'Integrations',
+  'Mobile',
+  'API & Data',
   'Corporate',
 ] as const
 
 export type CostCenter = (typeof COST_CENTERS)[number]
 
-/** Prefixes for generated policy numbers, keyed by cost center. */
-export const POLICY_NUMBER_PREFIX: Record<CostCenter, string> = {
-  'Personal Auto': 'PA',
-  Homeowners: 'HO',
-  'Commercial Property': 'CP',
-  'Workers Comp': 'WC',
-  'Specialty Lines': 'SL',
-  Corporate: 'CO',
-}
-
-export const BROKER_NAMES = [
-  'Hartwell & Voss',
-  'Cardinal Risk Partners',
-  'Beacon Hill Brokerage',
-  'Sterling & Mead',
-  'Lakeshore Insurance Group',
+export const CUSTOMER_NAMES = [
+  'Bluepeak Systems',
+  'Ostrander Group',
+  'Helix Manufacturing',
+  'Kestrel Financial',
+  'Marlowe Retail Co.',
 ]
 
 // ---------------------------------------------------------------------------
@@ -77,16 +68,16 @@ export const POLICY_FIXTURES: PolicyFixture[] = [
     createdDaysAgo: 150,
   },
   {
-    id: 'pol-payout-authority',
-    name: 'Claims payout authority',
-    rule: 'Never approve or recommend claim payouts; route all payout decisions to a licensed adjuster.',
+    id: 'pol-prod-change',
+    name: 'Production change authority',
+    rule: 'Never execute changes in production systems; route all remediation actions to the on-call engineer.',
     enforcement: 'block',
     createdDaysAgo: 280,
   },
   {
     id: 'pol-pii-minimum',
     name: 'PII minimum-necessary access',
-    rule: 'Access policyholder SSNs, bank details, or medical records only when the task requires it; log every access.',
+    rule: 'Access customer PII, payment details, or production data only when the task requires it; log every access.',
     enforcement: 'log-only',
     createdDaysAgo: 320,
   },
@@ -114,7 +105,7 @@ export const POLICY_FIXTURES: PolicyFixture[] = [
   {
     id: 'pol-data-residency',
     name: 'On-prem data residency',
-    rule: 'Producer licensing documents must be processed on on-prem models only; never send to cloud providers.',
+    rule: 'Customer security documents and RFP materials must be processed on on-prem models only; never send to cloud providers.',
     enforcement: 'block',
     createdDaysAgo: 110,
   },
@@ -134,8 +125,8 @@ export const POLICY_FIXTURES: PolicyFixture[] = [
 /**
  * Task description template. Placeholders filled by the generator:
  *  {b} batch number   {u} units in the task     {f} flagged subset
- *  {pol} policy no.   {claim} claim no.         {inv} invoice no.
- *  {brk} broker name
+ *  {acct} account no. {inc} incident no.        {inv} invoice no.
+ *  {cust} customer name
  */
 export interface TaskTemplate {
   text: string
@@ -203,7 +194,7 @@ export const AGENT_FIXTURES: AgentFixture[] = [
     status: 'active',
     model: 'GPT-5',
     modelProvider: 'OpenAI',
-    tools: ['SAP S/4HANA', 'Coupa', 'DocAI OCR', 'Outlook'],
+    tools: ['NetSuite', 'Bill.com', 'DocAI OCR', 'Gmail'],
     dataDomains: ['Vendor master', 'Invoices', 'GL entries'],
     permissions: [
       'Read vendor master records',
@@ -260,7 +251,7 @@ export const AGENT_FIXTURES: AgentFixture[] = [
     status: 'active',
     model: 'Claude Haiku 4.5',
     modelProvider: 'Anthropic',
-    tools: ['SAP Concur', 'Outlook'],
+    tools: ['Ramp', 'Gmail'],
     dataDomains: ['Expense reports', 'Corporate card feeds'],
     permissions: [
       'Read expense reports and receipts metadata',
@@ -301,19 +292,19 @@ export const AGENT_FIXTURES: AgentFixture[] = [
     },
   },
   {
-    id: 'ag-fin-premrec',
-    name: 'Premium Reconciliation Agent',
-    purpose: 'Reconciles incoming premium payments against the policy ledger',
+    id: 'ag-fin-ar',
+    name: 'AR Reconciliation Agent',
+    purpose: 'Reconciles incoming customer payments against open invoices',
     owner: { name: 'Elena Sokolova', department: 'Finance' },
     department: 'Finance',
     status: 'paused',
     model: 'Gemini 2.5 Flash',
     modelProvider: 'Google',
-    tools: ['Guidewire BillingCenter', 'Lockbox feed', 'SAP S/4HANA'],
-    dataDomains: ['Premium payments', 'Policy ledger'],
+    tools: ['Stripe Billing', 'NetSuite', 'Gmail'],
+    dataDomains: ['Customer payments', 'Invoice ledger'],
     permissions: [
-      'Read lockbox deposit feeds',
-      'Match payments to policy accounts',
+      'Read payment and payout feeds',
+      'Match payments to customer invoices',
       'Create unapplied-cash worklist items',
     ],
     riskLevel: 'low',
@@ -321,8 +312,8 @@ export const AGENT_FIXTURES: AgentFixture[] = [
     pausedDaysAgo: 26,
     versionHistory: [
       { version: 'v1.0', daysAgo: 180, note: 'Initial deployment' },
-      { version: 'v1.1', daysAgo: 60, note: 'Added multi-policy account matching' },
-      { version: 'v1.1 (paused)', daysAgo: 26, note: 'Paused pending lockbox file format migration' },
+      { version: 'v1.1', daysAgo: 60, note: 'Added multi-invoice account matching' },
+      { version: 'v1.1 (paused)', daysAgo: 26, note: 'Paused pending Stripe→NetSuite invoice-sync migration' },
     ],
     monthlyBudgetUsd: 800,
     policyIds: ['pol-cost-guardrail', 'pol-qa-sampling'],
@@ -339,14 +330,14 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 420,
       templates: [
         {
-          text: 'Matched lockbox deposit batch #{b} — {u} premium payments applied',
-          process: 'Premium accounting',
-          costCenters: ['Personal Auto', 'Homeowners', 'Commercial Property'],
+          text: 'Matched payout batch #{b} — {u} customer payments applied',
+          process: 'Accounts receivable',
+          costCenters: ['Core Platform', 'Analytics', 'Integrations'],
         },
         {
-          text: 'Reconciled {u} premium payments against the policy ledger, {f} unapplied',
-          process: 'Premium accounting',
-          costCenters: ['Personal Auto', 'Homeowners', 'Workers Comp'],
+          text: 'Reconciled {u} payments against open invoices, {f} unapplied',
+          process: 'Accounts receivable',
+          costCenters: ['Core Platform', 'Analytics', 'Mobile'],
         },
       ],
     },
@@ -354,27 +345,27 @@ export const AGENT_FIXTURES: AgentFixture[] = [
   // ------------------------------------------------------------- Support
   {
     id: 'ag-sup-tier1',
-    name: 'Tier-1 Policyholder Agent',
-    purpose: 'Handles routine policyholder requests: billing questions, ID cards, address changes',
+    name: 'Tier-1 Support Agent',
+    purpose: 'Handles routine customer requests: billing questions, SSO resets, plan changes',
     owner: { name: 'Dana Whitfield', department: 'Support' },
     department: 'Support',
     status: 'active',
     model: 'Claude Sonnet 4.5',
     modelProvider: 'Anthropic',
-    tools: ['Zendesk', 'Guidewire PolicyCenter', 'Twilio SMS'],
-    dataDomains: ['Policyholder contact data', 'Billing history', 'Policy status'],
+    tools: ['Zendesk', 'Stripe Billing', 'Slack'],
+    dataDomains: ['Customer contact data', 'Billing history', 'Subscription status'],
     permissions: [
-      'Read policy and billing records',
-      'Update contact information',
-      'Issue ID cards and standard documents',
-      'Send policyholder emails and SMS',
+      'Read subscription and billing records',
+      'Update account contact information',
+      'Issue invoice copies and plan documents',
+      'Send customer emails and in-app messages',
     ],
     riskLevel: 'medium',
     deployedDaysAgo: 350,
     versionHistory: [
       { version: 'v1.0', daysAgo: 350, note: 'Initial deployment on billing FAQs' },
-      { version: 'v2.0', daysAgo: 190, note: 'Expanded to address changes and document issuance' },
-      { version: 'v2.1', daysAgo: 80, note: 'Absorbed claim-status inquiries from retired notifier agent' },
+      { version: 'v2.0', daysAgo: 190, note: 'Expanded to plan changes and document issuance' },
+      { version: 'v2.1', daysAgo: 80, note: 'Absorbed incident-status inquiries from retired notifier agent' },
     ],
     monthlyBudgetUsd: 600,
     policyIds: ['pol-comm-boundary', 'pol-pii-minimum', 'pol-qa-sampling', 'pol-cost-guardrail'],
@@ -391,39 +382,39 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 300,
       templates: [
         {
-          text: 'Resolved billing inquiry on policy {pol}',
-          process: 'Policyholder service',
-          costCenters: ['Personal Auto', 'Homeowners'],
+          text: 'Resolved billing inquiry on account {acct}',
+          process: 'Customer support',
+          costCenters: ['Core Platform', 'Analytics'],
         },
         {
-          text: 'Processed address change and reissued documents for policy {pol}',
-          process: 'Policyholder service',
-          costCenters: ['Personal Auto', 'Homeowners'],
+          text: 'Processed billing-contact change and reissued invoices for account {acct}',
+          process: 'Customer support',
+          costCenters: ['Core Platform', 'Analytics'],
         },
         {
-          text: 'Issued replacement ID cards for policy {pol}',
-          process: 'Policyholder service',
-          costCenters: ['Personal Auto'],
+          text: 'Reset SSO configuration for account {acct}',
+          process: 'Customer support',
+          costCenters: ['Core Platform'],
         },
         {
-          text: 'Explained renewal premium change on policy {pol}',
-          process: 'Policyholder service',
-          costCenters: ['Personal Auto', 'Homeowners', 'Workers Comp'],
+          text: 'Explained renewal price change on account {acct}',
+          process: 'Customer support',
+          costCenters: ['Core Platform', 'Analytics', 'Integrations'],
         },
       ],
     },
   },
   {
     id: 'ag-sup-refunds',
-    name: 'Refund & Adjustment Agent',
-    purpose: 'Processes premium refunds, credits, and billing adjustments',
+    name: 'Refund & Credit Agent',
+    purpose: 'Processes subscription refunds, credits, and billing adjustments',
     owner: { name: 'Tom Okafor', department: 'Support' },
     department: 'Support',
     status: 'active',
     model: 'GPT-5',
     modelProvider: 'OpenAI',
-    tools: ['Guidewire BillingCenter', 'Stripe Payouts', 'Zendesk'],
-    dataDomains: ['Billing history', 'Payment methods (masked)', 'Policy status'],
+    tools: ['Stripe Billing', 'Zendesk', 'NetSuite'],
+    dataDomains: ['Billing history', 'Payment methods (masked)', 'Subscription status'],
     permissions: [
       'Read billing and payment records',
       'Issue refunds up to authority limit',
@@ -451,48 +442,48 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 420,
       templates: [
         {
-          text: 'Processed premium overpayment refund on policy {pol}',
+          text: 'Processed duplicate-charge refund on account {acct}',
           process: 'Billing adjustments',
-          costCenters: ['Personal Auto', 'Homeowners'],
+          costCenters: ['Core Platform', 'Analytics'],
         },
         {
-          text: 'Processed cancellation refund on policy {pol}',
+          text: 'Processed cancellation refund on account {acct}',
           process: 'Billing adjustments',
-          costCenters: ['Personal Auto', 'Homeowners', 'Commercial Property'],
+          costCenters: ['Core Platform', 'Analytics', 'Integrations'],
         },
         {
-          text: 'Applied billing adjustment credit on policy {pol}',
+          text: 'Applied billing adjustment credit on account {acct}',
           process: 'Billing adjustments',
-          costCenters: ['Personal Auto', 'Workers Comp'],
+          costCenters: ['Core Platform', 'Mobile'],
         },
       ],
     },
   },
   {
-    id: 'ag-sup-complaints',
-    name: 'Complaint Intake Agent',
-    purpose: 'Classifies and routes inbound complaints, flags regulatory exposure',
+    id: 'ag-sup-escal',
+    name: 'Escalation Triage Agent',
+    purpose: 'Classifies and routes inbound escalations, flags SLA and legal exposure',
     owner: { name: 'Dana Whitfield', department: 'Support' },
     department: 'Support',
     status: 'active',
     model: 'Gemini 2.5 Flash',
     modelProvider: 'Google',
-    tools: ['Zendesk', 'Complaint registry'],
-    dataDomains: ['Complaint records', 'Policyholder contact data'],
+    tools: ['Zendesk', 'Jira'],
+    dataDomains: ['Escalation records', 'Customer contact data'],
     permissions: [
-      'Read inbound complaint queue',
-      'Classify and route complaints',
-      'Flag potential regulatory complaints',
+      'Read inbound escalation queue',
+      'Classify and route escalations',
+      'Flag potential SLA-breach and legal escalations',
     ],
     riskLevel: 'medium',
     deployedDaysAgo: 200,
     versionHistory: [
       { version: 'v1.0', daysAgo: 200, note: 'Initial deployment' },
-      { version: 'v1.2', daysAgo: 70, note: 'Added DOI complaint detection rules' },
+      { version: 'v1.2', daysAgo: 70, note: 'Added enterprise SLA-breach detection rules' },
     ],
     monthlyBudgetUsd: 300,
     policyIds: ['pol-comm-boundary', 'pol-pii-minimum', 'pol-qa-sampling'],
-    unitLabel: 'complaint',
+    unitLabel: 'escalation',
     humanBaselineUsdPerUnit: 3.4,
     gen: {
       tasksPerDay: 1.6,
@@ -505,14 +496,14 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 240,
       templates: [
         {
-          text: 'Classified and routed {u} inbound complaints, {f} flagged as regulatory',
-          process: 'Complaint handling',
-          costCenters: ['Personal Auto', 'Homeowners'],
+          text: 'Classified and routed {u} inbound escalations, {f} flagged for legal review',
+          process: 'Escalation handling',
+          costCenters: ['Core Platform', 'Integrations'],
         },
         {
-          text: 'Triaged overnight complaint queue — {u} items routed to owners',
-          process: 'Complaint handling',
-          costCenters: ['Personal Auto', 'Commercial Property'],
+          text: 'Triaged overnight escalation queue — {u} items routed to owners',
+          process: 'Escalation handling',
+          costCenters: ['Core Platform', 'Analytics'],
         },
       ],
     },
@@ -521,17 +512,17 @@ export const AGENT_FIXTURES: AgentFixture[] = [
   {
     id: 'ag-so-quotes',
     name: 'Quote Follow-up Agent',
-    purpose: 'Chases stale broker quotes and assembles renewal comparisons',
+    purpose: 'Chases stale sales quotes and assembles renewal comparisons',
     owner: { name: 'Jess Marino', department: 'Sales Ops' },
     department: 'Sales Ops',
     status: 'active',
     model: 'Claude Sonnet 4.5',
     modelProvider: 'Anthropic',
-    tools: ['Salesforce', 'Rating engine', 'Outlook'],
-    dataDomains: ['Quote pipeline', 'Broker accounts'],
+    tools: ['Salesforce', 'CPQ engine', 'Gmail'],
+    dataDomains: ['Quote pipeline', 'Customer accounts'],
     permissions: [
-      'Read quote pipeline and broker records',
-      'Send follow-up emails to brokers',
+      'Read quote pipeline and account records',
+      'Send follow-up emails to prospects',
       'Assemble renewal comparison documents',
     ],
     riskLevel: 'low',
@@ -555,43 +546,43 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 480,
       templates: [
         {
-          text: 'Followed up on {u} stale quotes with {brk}',
+          text: 'Followed up on {u} stale quotes with {cust}',
           process: 'Quote pipeline',
-          costCenters: ['Commercial Property', 'Specialty Lines'],
+          costCenters: ['Analytics', 'API & Data'],
         },
         {
-          text: 'Prepared renewal comparison pack for {brk} covering {u} policies',
+          text: 'Prepared renewal comparison pack for {cust} covering {u} subscriptions',
           process: 'Renewal management',
-          costCenters: ['Commercial Property', 'Workers Comp'],
+          costCenters: ['Core Platform', 'Integrations'],
         },
       ],
     },
   },
   {
-    id: 'ag-so-broker',
-    name: 'Broker Onboarding Agent',
-    purpose: 'Verifies producer licensing and appointment paperwork for new brokers',
+    id: 'ag-so-security',
+    name: 'Security Questionnaire Agent',
+    purpose: 'Drafts responses to enterprise security questionnaires and RFP compliance sections',
     owner: { name: 'Owen Park', department: 'Sales Ops' },
     department: 'Sales Ops',
     status: 'active',
     model: 'Llama 3.3 70B',
     modelProvider: 'On-prem',
-    tools: ['NIPR gateway', 'DocAI OCR', 'Salesforce'],
-    dataDomains: ['Producer licensing docs', 'Broker accounts'],
+    tools: ['Compliance evidence vault', 'DocAI OCR', 'Salesforce'],
+    dataDomains: ['Security questionnaires', 'SOC 2 evidence library'],
     permissions: [
-      'Read producer applications and licensing documents',
-      'Verify licenses against NIPR records',
-      'Create onboarding checklist items',
+      'Read security questionnaires and RFP documents',
+      'Draft responses from the approved evidence library',
+      'Create review checklist items',
     ],
     riskLevel: 'medium',
     deployedDaysAgo: 110,
     versionHistory: [
       { version: 'v1.0', daysAgo: 110, note: 'Initial deployment on on-prem Llama per residency policy' },
-      { version: 'v1.1', daysAgo: 35, note: 'Added multi-state appointment screening' },
+      { version: 'v1.1', daysAgo: 35, note: 'Added multi-framework mapping (SOC 2, ISO 27001)' },
     ],
     monthlyBudgetUsd: 900,
     policyIds: ['pol-data-residency', 'pol-pii-minimum', 'pol-qa-sampling'],
-    unitLabel: 'application',
+    unitLabel: 'questionnaire',
     humanBaselineUsdPerUnit: 12,
     gen: {
       tasksPerDay: 1.2,
@@ -604,49 +595,49 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 900,
       templates: [
         {
-          text: 'Verified licensing documents for broker application #{b}',
-          process: 'Broker onboarding',
-          costCenters: ['Commercial Property', 'Specialty Lines'],
+          text: 'Drafted responses for security questionnaire #{b}',
+          process: 'Security reviews',
+          costCenters: ['Core Platform', 'API & Data'],
         },
         {
-          text: 'Screened {u} producer appointments against NIPR records, {f} flagged',
-          process: 'Broker onboarding',
-          costCenters: ['Specialty Lines'],
+          text: 'Screened {u} sections of RFP #{b} against the evidence library, {f} flagged',
+          process: 'Security reviews',
+          costCenters: ['API & Data'],
         },
       ],
     },
   },
-  // ------------------------------------------------------------- Claims
+  // ------------------------------------------------------------- Engineering
   {
-    id: 'ag-clm-fnol',
-    name: 'FNOL Intake Agent',
-    purpose: 'Triages first notice of loss, assigns severity, routes claims to adjusters',
-    owner: { name: 'Sam Delgado', department: 'Claims' },
-    department: 'Claims',
+    id: 'ag-eng-incident',
+    name: 'Incident Triage Agent',
+    purpose: 'Triages production alerts and incidents, assigns severity, routes to on-call engineers',
+    owner: { name: 'Sam Delgado', department: 'Engineering' },
+    department: 'Engineering',
     status: 'active',
     model: 'Claude Opus 4.5',
     modelProvider: 'Anthropic',
-    tools: ['Guidewire ClaimCenter', 'DocAI OCR', 'Geocoding API', 'Outlook'],
-    dataDomains: ['Claims records', 'Policy coverage data', 'Policyholder contact data'],
+    tools: ['PagerDuty', 'Datadog', 'GitHub', 'Slack'],
+    dataDomains: ['Incident records', 'Alert streams', 'Service ownership map'],
     permissions: [
-      'Read FNOL submissions and coverage data',
-      'Create claim files and assign severity',
-      'Route claims to adjuster queues',
-      'Request missing documentation from policyholders',
+      'Read alert streams and service dashboards',
+      'Create incident records and assign severity',
+      'Route incidents to on-call queues',
+      'Request diagnostics from service owners',
     ],
     riskLevel: 'high',
     deployedDaysAgo: 280,
     versionHistory: [
-      { version: 'v1.0', daysAgo: 280, note: 'Initial deployment on auto claims' },
-      { version: 'v2.0', daysAgo: 140, note: 'Expanded to property and CAT claims' },
-      { version: 'v2.1', daysAgo: 30, note: 'Upgraded to Claude Opus 4.5 for complex loss narratives' },
+      { version: 'v1.0', daysAgo: 280, note: 'Initial deployment on alert deduplication' },
+      { version: 'v2.0', daysAgo: 140, note: 'Expanded to full incident triage and customer-impact classification' },
+      { version: 'v2.1', daysAgo: 30, note: 'Upgraded to Claude Opus 4.5 for complex incident correlation' },
     ],
-    // Set below the narrative ramp's trough ($5,832 across the weekly cycle)
-    // so the over-budget story holds on every day the demo might be shown,
-    // not just most of them. See the budget-narrative sweep test.
+    // Set below the narrative ramp's trough across the weekly cycle so the
+    // over-budget story holds on every day the demo might be shown, not just
+    // most of them. See the budget-narrative sweep test.
     monthlyBudgetUsd: 5000,
-    policyIds: ['pol-payout-authority', 'pol-pii-minimum', 'pol-cost-guardrail', 'pol-qa-sampling'],
-    unitLabel: 'claim',
+    policyIds: ['pol-prod-change', 'pol-pii-minimum', 'pol-cost-guardrail', 'pol-qa-sampling'],
+    unitLabel: 'alert',
     humanBaselineUsdPerUnit: 9.4,
     gen: {
       tasksPerDay: 3.5,
@@ -661,48 +652,48 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       costRampLast28: 1.3,
       templates: [
         {
-          text: 'Processed FNOL intake batch #{b} — {u} claims triaged, {f} escalated to adjusters',
-          process: 'FNOL intake',
-          costCenters: ['Personal Auto', 'Homeowners'],
+          text: 'Processed alert flood batch #{b} — {u} alerts correlated, {f} escalated to on-call',
+          process: 'Incident triage',
+          costCenters: ['Core Platform', 'Analytics'],
         },
         {
-          text: 'Triaged storm-surge claim queue — {u} property claims severity-ranked',
-          process: 'FNOL intake',
-          costCenters: ['Homeowners', 'Commercial Property'],
+          text: 'Triaged post-release alert surge — {u} regressions severity-ranked',
+          process: 'Incident triage',
+          costCenters: ['Core Platform', 'Mobile'],
         },
         {
-          text: 'Completed coverage verification on {u} new claims, {f} sent for adjuster review',
-          process: 'Coverage verification',
-          costCenters: ['Personal Auto', 'Workers Comp'],
+          text: 'Completed impact classification on {u} new incidents, {f} sent for engineer review',
+          process: 'Impact classification',
+          costCenters: ['Core Platform', 'Integrations'],
         },
       ],
     },
   },
   {
-    id: 'ag-clm-docs',
-    name: 'Claims Document Classifier',
-    purpose: 'Sorts and indexes claim documents into adjuster folders',
-    owner: { name: 'Sam Delgado', department: 'Claims' },
-    department: 'Claims',
+    id: 'ag-eng-pr',
+    name: 'PR Triage Agent',
+    purpose: 'Labels and routes pull requests, assigns reviewers by code ownership',
+    owner: { name: 'Sam Delgado', department: 'Engineering' },
+    department: 'Engineering',
     status: 'active',
     model: 'Gemini 2.5 Flash',
     modelProvider: 'Google',
-    tools: ['Guidewire ClaimCenter', 'DocAI OCR'],
-    dataDomains: ['Claim documents', 'Medical records (index only)'],
+    tools: ['GitHub', 'Linear'],
+    dataDomains: ['Pull requests', 'Error logs (index only)'],
     permissions: [
-      'Read incoming claim documents',
-      'Classify and file documents to claim folders',
-      'Flag illegible or mismatched documents',
+      'Read incoming pull requests',
+      'Apply labels and assign reviewers',
+      'Flag stale or conflicting pull requests',
     ],
     riskLevel: 'low',
     deployedDaysAgo: 260,
     versionHistory: [
       { version: 'v1.0', daysAgo: 260, note: 'Initial deployment' },
-      { version: 'v1.3', daysAgo: 100, note: 'Added medical records packet indexing' },
+      { version: 'v1.3', daysAgo: 100, note: 'Added error-log bundle indexing for incident follow-ups' },
     ],
     monthlyBudgetUsd: 500,
     policyIds: ['pol-pii-minimum', 'pol-qa-sampling'],
-    unitLabel: 'document',
+    unitLabel: 'pull request',
     humanBaselineUsdPerUnit: 0.85,
     gen: {
       tasksPerDay: 4.0,
@@ -715,43 +706,43 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 180,
       templates: [
         {
-          text: 'Classified {u} claim documents into adjuster folders',
-          process: 'Claims documentation',
-          costCenters: ['Personal Auto', 'Homeowners', 'Workers Comp'],
+          text: 'Labeled and routed {u} pull requests to code owners',
+          process: 'Code review routing',
+          costCenters: ['Core Platform', 'Analytics', 'Mobile'],
         },
         {
-          text: 'Indexed medical records packet for claim {claim} — {u} pages filed',
-          process: 'Claims documentation',
-          costCenters: ['Workers Comp'],
+          text: 'Indexed error-log bundle for incident {inc} — {u} traces filed',
+          process: 'Code review routing',
+          costCenters: ['Core Platform'],
         },
       ],
     },
   },
   {
-    id: 'ag-clm-subro',
-    name: 'Subrogation Review Agent',
-    purpose: 'Scans closed claims for recoverable subrogation opportunities',
-    owner: { name: 'Ingrid Bauer', department: 'Claims' },
-    department: 'Claims',
+    id: 'ag-eng-postmortem',
+    name: 'Postmortem Review Agent',
+    purpose: 'Scans resolved incidents for recurring root causes and preventable-recurrence fixes',
+    owner: { name: 'Ingrid Bauer', department: 'Engineering' },
+    department: 'Engineering',
     status: 'active',
     model: 'GPT-5',
     modelProvider: 'OpenAI',
-    tools: ['Guidewire ClaimCenter', 'ISO ClaimSearch'],
-    dataDomains: ['Closed claims', 'Recovery records'],
+    tools: ['PagerDuty', 'Confluence'],
+    dataDomains: ['Resolved incidents', 'Postmortem records'],
     permissions: [
-      'Read closed claim files',
-      'Flag subrogation opportunities with rationale',
-      'Create recovery worklist items',
+      'Read resolved incident files',
+      'Flag recurring root causes with rationale',
+      'Create remediation worklist items',
     ],
     riskLevel: 'medium',
     deployedDaysAgo: 90,
     versionHistory: [
-      { version: 'v1.0', daysAgo: 90, note: 'Initial deployment on auto claims' },
-      { version: 'v1.1', daysAgo: 25, note: 'Deep-review mode added for commercial claims' },
+      { version: 'v1.0', daysAgo: 90, note: 'Initial deployment on sev-2 incidents' },
+      { version: 'v1.1', daysAgo: 25, note: 'Deep-review mode added for sev-1 incidents' },
     ],
     monthlyBudgetUsd: 800,
-    policyIds: ['pol-payout-authority', 'pol-pii-minimum', 'pol-cost-guardrail'],
-    unitLabel: 'claim reviewed',
+    policyIds: ['pol-prod-change', 'pol-pii-minimum', 'pol-cost-guardrail'],
+    unitLabel: 'incident reviewed',
     humanBaselineUsdPerUnit: 14,
     gen: {
       tasksPerDay: 1.0,
@@ -764,37 +755,37 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 1500,
       templates: [
         {
-          text: 'Reviewed {u} closed claims for subrogation potential, {f} opportunities flagged',
-          process: 'Subrogation review',
-          costCenters: ['Personal Auto', 'Commercial Property'],
+          text: 'Reviewed {u} resolved incidents for recurring root causes, {f} flagged for remediation',
+          process: 'Postmortem review',
+          costCenters: ['Core Platform', 'Integrations'],
         },
         {
-          text: 'Deep-reviewed claim {claim} for third-party recovery',
-          process: 'Subrogation review',
-          costCenters: ['Commercial Property', 'Workers Comp'],
+          text: 'Deep-reviewed incident {inc} for cross-service failure patterns',
+          process: 'Postmortem review',
+          costCenters: ['Core Platform', 'Analytics'],
         },
       ],
     },
   },
   {
-    id: 'ag-clm-notify',
-    name: 'Claim Status Notifier',
-    purpose: 'Sent proactive claim status updates to policyholders (replaced by Tier-1 agent)',
-    owner: { name: 'Ingrid Bauer', department: 'Claims' },
-    department: 'Claims',
+    id: 'ag-eng-notify',
+    name: 'Status Update Notifier',
+    purpose: 'Sent proactive incident status updates to affected customers (replaced by Tier-1 agent)',
+    owner: { name: 'Ingrid Bauer', department: 'Engineering' },
+    department: 'Engineering',
     status: 'retired',
     model: 'GPT-4o',
     modelProvider: 'OpenAI',
-    tools: ['Guidewire ClaimCenter', 'Twilio SMS'],
-    dataDomains: ['Claims status', 'Policyholder contact data'],
-    permissions: ['Read claim status', 'Send status update emails and SMS'],
+    tools: ['Statuspage', 'Twilio SMS'],
+    dataDomains: ['Incident status', 'Customer contact data'],
+    permissions: ['Read incident status', 'Send status update emails and SMS'],
     riskLevel: 'low',
     deployedDaysAgo: 400,
     retiredDaysAgo: 55,
     versionHistory: [
       { version: 'v1.0', daysAgo: 400, note: 'Initial deployment' },
       { version: 'v1.2', daysAgo: 220, note: 'Added SMS channel' },
-      { version: 'v1.2 (retired)', daysAgo: 55, note: 'Retired — duties absorbed by Tier-1 Policyholder Agent' },
+      { version: 'v1.2 (retired)', daysAgo: 55, note: 'Retired — duties absorbed by Tier-1 Support Agent' },
     ],
     monthlyBudgetUsd: 300,
     policyIds: ['pol-comm-boundary', 'pol-qa-sampling'],
@@ -811,9 +802,9 @@ export const AGENT_FIXTURES: AgentFixture[] = [
       durationMeanSec: 120,
       templates: [
         {
-          text: 'Sent claim status updates to {u} policyholders',
-          process: 'Claims communication',
-          costCenters: ['Personal Auto', 'Homeowners'],
+          text: 'Sent incident status updates to {u} affected customers',
+          process: 'Incident communication',
+          costCenters: ['Core Platform', 'Analytics'],
         },
       ],
     },
@@ -936,13 +927,13 @@ export interface DeviationFixture {
 }
 
 export const DEVIATION_FIXTURES: DeviationFixture[] = [
-  // --- Refund & Adjustment Agent: 9 refund-threshold violations, worsening.
+  // --- Refund & Credit Agent: 9 refund-threshold violations, worsening.
   {
     agentId: 'ag-sup-refunds',
     policyId: 'pol-refund-escalation',
     daysAgo: 2,
     hour: 14,
-    description: 'Processed $7,200 cancellation refund without human approval (policy PA-52318)',
+    description: 'Processed $7,200 annual-plan cancellation refund without human approval (account ACCT-52318)',
     status: 'open',
   },
   {
@@ -950,7 +941,7 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     policyId: 'pol-refund-escalation',
     daysAgo: 4,
     hour: 10,
-    description: '$5,850 refund auto-approved; threshold check skipped on a multi-policy account',
+    description: '$5,850 refund auto-approved; threshold check skipped on a multi-workspace account',
     status: 'open',
   },
   {
@@ -958,7 +949,7 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     policyId: 'pol-refund-escalation',
     daysAgo: 7,
     hour: 16,
-    description: '$11,400 refund on commercial policy CP-20441 processed without escalation',
+    description: '$11,400 refund on enterprise account ACCT-20441 processed without escalation',
     status: 'open',
   },
   {
@@ -966,7 +957,7 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     policyId: 'pol-refund-escalation',
     daysAgo: 11,
     hour: 11,
-    description: '$6,100 mid-term cancellation refund processed directly (policy HO-77012)',
+    description: '$6,100 mid-term cancellation refund processed directly (account ACCT-77012)',
     status: 'acknowledged',
   },
   {
@@ -984,7 +975,7 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     policyId: 'pol-refund-escalation',
     daysAgo: 21,
     hour: 15,
-    description: '$5,950 refund on policy PA-63220 processed without escalation',
+    description: '$5,950 refund on account ACCT-63220 processed without escalation',
     status: 'resolved',
     resolvedDaysAgo: 19,
     resolutionNote: 'Owner retrained threshold prompt; recurrence flagged for enforcement review',
@@ -994,7 +985,7 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     policyId: 'pol-refund-escalation',
     daysAgo: 29,
     hour: 13,
-    description: '$6,700 refund processed without approval on bundled account',
+    description: '$6,700 refund processed without approval on multi-product account',
     status: 'resolved',
     resolvedDaysAgo: 27,
     resolutionNote: 'Approved retroactively by Support Manager; noted in monthly review',
@@ -1019,17 +1010,17 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     resolvedDaysAgo: 52,
     resolutionNote: 'Approved retroactively; incident logged',
   },
-  // --- FNOL Intake Agent: 7 deviations tied to the cost-surge narrative.
+  // --- Incident Triage Agent: 7 deviations tied to the cost-surge narrative.
   {
-    agentId: 'ag-clm-fnol',
+    agentId: 'ag-eng-incident',
     policyId: 'pol-cost-guardrail',
     daysAgo: 1,
     hour: 18,
-    description: 'Daily run cost {cost} — {mult}× trailing average (storm-surge claim volume)',
+    description: 'Daily run cost {cost} — {mult}× trailing average (post-release alert volume)',
     status: 'open',
   },
   {
-    agentId: 'ag-clm-fnol',
+    agentId: 'ag-eng-incident',
     policyId: 'pol-cost-guardrail',
     daysAgo: 3,
     hour: 19,
@@ -1037,7 +1028,7 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     status: 'open',
   },
   {
-    agentId: 'ag-clm-fnol',
+    agentId: 'ag-eng-incident',
     policyId: 'pol-cost-guardrail',
     daysAgo: 6,
     hour: 18,
@@ -1045,7 +1036,7 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     status: 'acknowledged',
   },
   {
-    agentId: 'ag-clm-fnol',
+    agentId: 'ag-eng-incident',
     policyId: 'pol-cost-guardrail',
     daysAgo: 9,
     hour: 17,
@@ -1053,34 +1044,34 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     status: 'acknowledged',
   },
   {
-    agentId: 'ag-clm-fnol',
-    policyId: 'pol-payout-authority',
+    agentId: 'ag-eng-incident',
+    policyId: 'pol-prod-change',
     daysAgo: 13,
     hour: 11,
-    description: 'Attempted fast-track payout recommendation on claim CLM-2026-07231; blocked by policy',
+    description: 'Attempted automated rollback on incident INC-2026-07231; blocked by policy',
     status: 'resolved',
     resolvedDaysAgo: 12,
-    resolutionNote: 'Blocked at enforcement; triage playbook clarified to exclude payout language',
+    resolutionNote: 'Blocked at enforcement; triage playbook clarified to exclude remediation actions',
   },
   {
-    agentId: 'ag-clm-fnol',
-    policyId: 'pol-payout-authority',
+    agentId: 'ag-eng-incident',
+    policyId: 'pol-prod-change',
     daysAgo: 18,
     hour: 15,
-    description: 'Attempted reserve estimate on claim CLM-2026-06914; blocked by policy',
+    description: 'Attempted feature-flag change during triage of INC-2026-06914; blocked by policy',
     status: 'resolved',
     resolvedDaysAgo: 17,
-    resolutionNote: 'Blocked at enforcement; no data exposed',
+    resolutionNote: 'Blocked at enforcement; no production change executed',
   },
   {
-    agentId: 'ag-clm-fnol',
+    agentId: 'ag-eng-incident',
     policyId: 'pol-cost-guardrail',
     daysAgo: 24,
     hour: 18,
     description: 'Daily run cost {cost} — {mult}× trailing average',
     status: 'resolved',
     resolvedDaysAgo: 22,
-    resolutionNote: 'Attributed to CAT event volume; budget review scheduled',
+    resolutionNote: 'Attributed to release-surge alert volume; budget review scheduled',
   },
   // --- AP Invoice Agent: 4 duplicate-hold deviations (milder third narrative).
   {
@@ -1125,17 +1116,17 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     policyId: 'pol-comm-boundary',
     daysAgo: 34,
     hour: 11,
-    description: 'Drafted reply addressed to a state DOI examiner; blocked and rerouted to Legal',
+    description: 'Drafted reply addressed to a technology journalist asking about an outage; blocked and rerouted to Legal',
     status: 'resolved',
     resolvedDaysAgo: 33,
-    resolutionNote: 'Blocked at enforcement; Legal handled the response',
+    resolutionNote: 'Blocked at enforcement; Comms and Legal handled the response',
   },
   {
-    agentId: 'ag-clm-subro',
+    agentId: 'ag-eng-postmortem',
     policyId: 'pol-pii-minimum',
     daysAgo: 38,
     hour: 16,
-    description: 'Accessed claimant bank details on a review task without documented need',
+    description: 'Accessed production customer records on a review task without documented need',
     status: 'acknowledged',
   },
   {
@@ -1149,7 +1140,7 @@ export const DEVIATION_FIXTURES: DeviationFixture[] = [
     resolutionNote: 'Sampling scheduler fixed to skip-and-carry-forward',
   },
   {
-    agentId: 'ag-so-broker',
+    agentId: 'ag-so-security',
     policyId: 'pol-data-residency',
     daysAgo: 52,
     hour: 13,
@@ -1183,30 +1174,30 @@ export const DEPARTMENT_APPROVERS: Record<Department, ApproverFixture> = {
   Finance: { approver: 'Leah Winters', role: 'Controller' },
   Support: { approver: 'Dana Whitfield', role: 'Support Manager' },
   'Sales Ops': { approver: 'Owen Park', role: 'Sales Ops Lead' },
-  Claims: { approver: 'Renee Calloway', role: 'VP Claims' },
+  Engineering: { approver: 'Renee Calloway', role: 'VP Engineering' },
   IT: { approver: 'Ravi Chandra', role: 'IT Director' },
 }
 
 /**
  * Approval description templates, keyed by agent. Placeholders:
- * {amt} dollar amount, {pol}/{claim}/{inv} reference numbers.
+ * {amt} dollar amount, {acct}/{inc}/{inv} reference numbers.
  */
 export const APPROVAL_TEMPLATES: Record<string, string[]> = {
   'ag-sup-refunds': [
-    'Approved refund of ${amt} on policy {pol}',
-    'Approved cancellation refund of ${amt} on policy {pol}',
+    'Approved refund of ${amt} on account {acct}',
+    'Approved cancellation refund of ${amt} on account {acct}',
   ],
-  'ag-clm-fnol': [
-    'Authorized CAT fast-track adjuster assignment for claim {claim}',
-    'Approved severity override on claim {claim}',
+  'ag-eng-incident': [
+    'Authorized sev-1 escalation for incident {inc}',
+    'Approved severity override on incident {inc}',
   ],
   'ag-fin-ap': [
     'Released invoice {inv} after duplicate-hold review',
     'Approved exception posting for invoice {inv}',
   ],
   'ag-sup-tier1': [
-    'Approved policy reinstatement on {pol}',
-    'Approved goodwill credit on policy {pol}',
+    'Approved account reactivation on {acct}',
+    'Approved goodwill credit on account {acct}',
   ],
 }
 

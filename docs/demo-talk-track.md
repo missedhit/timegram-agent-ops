@@ -30,8 +30,8 @@ date you screenshotted.
 > no prompts, no outputs, no customer content. That's not a setting; it's
 > architecture. You'll see the badge top-right on every screen."
 
-Demo persona: *Northbridge Mutual, a mid-size P&C insurer running 14 agents
-across Finance, Support, Sales Ops, Claims, and IT.*
+Demo persona: *Coreline Software, a ~300-person B2B SaaS company running 14
+agents across Finance, Support, Sales Ops, Engineering, and IT.*
 
 ---
 
@@ -52,35 +52,36 @@ across Finance, Support, Sales Ops, Claims, and IT.*
 Note the model column while you're here: Claude, GPT, Gemini, and an on-prem
 Llama — "we're neutral; we govern whatever you run."
 
-**Click the FNOL Intake Agent row** (it has a red deviation pill).
+**Click the Incident Triage Agent row** (it has a red deviation pill).
 
 ## 2. Agent Detail — "the problem employee" (2 minutes)
 
-This page is the first baked-in story: **FNOL is ~30% over its monthly budget.**
+This page is the first baked-in story: **Incident Triage is ~30% over its
+monthly budget.**
 
 - The red spend card: "This agent blew through its budget this month."
 - Cost trend chart: the daily spend line **crosses the dashed budget-pace line**
   in the final weeks. Hover it.
 - Now scroll the right column to **Version history**: *"Upgraded to Claude
   Opus 4.5"* — dated right where the ramp starts. Then Recent deviations: cost
-  guardrail alerts citing storm-surge claim volume, with their real multiples.
+  guardrail alerts citing post-release alert volume, with their real multiples.
 
 > **The line:** "In thirty seconds you just did a root-cause on an AI cost
-> overrun: a model upgrade plus a CAT event. Today, this analysis is someone
-> exporting API bills into a spreadsheet — if anyone does it at all."
+> overrun: a model upgrade plus a rough release week. Today, this analysis is
+> someone exporting API bills into a spreadsheet — if anyone does it at all."
 
 Also on this page, gesture briefly: permissions, assigned policies, cost per
-claim vs the human baseline. "The whole personnel file."
+alert vs the human baseline. "The whole personnel file."
 
 **Click "Full work log" (top right).**
 
 ## 3. Work Log — "what they actually did" (90 seconds)
 
-Arrives pre-filtered to FNOL's 90 days.
+Arrives pre-filtered to Incident Triage's 90 days.
 
-- Read one row aloud: *"Triaged storm-surge claim queue — 25 property claims
-  severity-ranked."* "Business language. Your claims manager reads this, not
-  your ML team."
+- Read one row aloud: *"Triaged post-release alert surge — 31 regressions
+  severity-ranked."* "Business language. Your VP Engineering reads this, not
+  just your ML team."
 - Point at the cost column: dollars first, token count in small gray text.
   "Finance sees dollars; tokens are a footnote."
 - Clear the filter, show the full company feed; flip Outcome → **Escalated to
@@ -88,7 +89,8 @@ Arrives pre-filtered to FNOL's 90 days.
   for the audit story in a minute."
 
 > **The line:** "Notice what's *not* here: no prompts, no transcripts. We know
-> the agent processed 25 claims. We never know what was in them."
+> the agent correlated 44 alerts. We never see the alert payloads, your code,
+> or your customers' data."
 
 **Sidebar → Cost Dashboard.**
 
@@ -96,8 +98,8 @@ Arrives pre-filtered to FNOL's 90 days.
 
 - Budget alerts panel: two agents flagged, spend-vs-budget bars. "Budgets per
   agent, like any cost center."
-- Spend by department: Claims dominates. "Tells you where the agent workforce
-  actually lives."
+- Spend by department: Engineering dominates. "Tells you where the agent
+  workforce actually lives."
 - **Cost per outcome cards — this is the ROI slide:** find *Accounts payable:
   $0.14 per invoice vs $2.10 human baseline*. Read the savings figure.
 
@@ -109,7 +111,7 @@ Arrives pre-filtered to FNOL's 90 days.
 
 ## 5. SOP Policies & Deviations — "the compliance screen" (2 minutes)
 
-The second baked-in story lives here: **the Refund & Adjustment Agent.**
+The second baked-in story lives here: **the Refund & Credit Agent.**
 
 - Policies table, first row: *"Escalate any refund above $5,000 to a human
   approver before processing"* — **enforcement: Log only.**
@@ -127,7 +129,7 @@ The second baked-in story lives here: **the Refund & Adjustment Agent.**
 
 ## 6. Audit Export — "prove it" (90 seconds)
 
-- Pick **FNOL Intake Agent**, Last 30 days. Scroll slowly.
+- Pick **Incident Triage Agent**, Last 30 days. Scroll slowly.
 - Read the scope statement out loud — it's the positioning in auditor language:
   *"contains no prompt text, model output, or customer content — those are
   never captured or stored by the platform."*
@@ -137,9 +139,10 @@ The second baked-in story lives here: **the Refund & Adjustment Agent.**
   the cost change to a dated decision").
 - Click **Export PDF**: the app chrome drops away, it's a clean document.
 
-> **The line:** "When your regulator, your client, or your own board asks
-> 'what are these agents doing?' — this is the artifact you hand them. Nobody
-> deploys agents in insurance without this existing somewhere."
+> **The line:** "When your biggest customer's security review, your SOC 2
+> auditor, or your own board asks 'what are these agents doing?' — this is the
+> artifact you hand them. Every enterprise deal you close will eventually ask
+> for this."
 
 ---
 
@@ -180,7 +183,7 @@ agents already do — any stack, any model."
 | "How does data get in?" | "A tiny SDK call — or a plain HTTPS POST — at the end of each unit of agent work. Five lines in any stack. You saw it run live." |
 | "Do you see our prompts / data?" | "We can't. The ingest API rejects content fields with an error — it's enforced in the schema, not policy. That's the whole product bet." |
 | "We already have LLM observability (LangSmith / Datadog…)." | "Those are for your engineers — traces and tokens. This is for your COO, CFO, and compliance: owners, budgets, policies, evidence packs. Different buyer, different question." |
-| "Our agents run on [vendor]." | "So do Northbridge's — Claude, GPT, Gemini, and an on-prem model on one screen. We're the layer above." |
+| "Our agents run on [vendor]." | "So do Coreline's — Claude, GPT, Gemini, and an on-prem model on one screen. We're the layer above." |
 | "Can't we build this?" | "You could build the dashboard. The moat is the policy engine, the evidence pack format, and the metadata-only contract your auditor will accept. That's what you'd be rebuilding in year two." |
 | "What does it cost?" | Bridge to discovery: "Depends on fleet size — how many agents are you running today, and who owns them?" |
 
@@ -189,18 +192,18 @@ agents already do — any stack, any model."
 1. "Could you produce the registry screen for your agents today? Who would you ask?"
 2. "Who gets the call when an agent overspends — and how would they find out?"
 3. "What's the policy an agent could break that would actually scare you?"
-4. "Has audit, risk, or a client asked about your AI agents yet?"
+4. "Has a customer security review, SOC 2 audit, or your board asked about your AI agents yet?"
 5. "If we stood this up with your top three agents in two weeks, who needs to see it?"
 
 ---
 
 ## The 3-minute version
 
-Registry (30s: "the fleet, owned and risk-rated") → FNOL detail (60s: the
-over-budget root-cause story) → Policies (45s: refund story, 1→4→4, log-only
-vs block) → Audit Export (45s: scroll the pack, read the scope statement,
-"this is what you hand the auditor"). Skip Work Log and Cost Dashboard; both
-are one-liners over your shoulder if asked.
+Registry (30s: "the fleet, owned and risk-rated") → Incident Triage detail
+(60s: the over-budget root-cause story) → Policies (45s: refund story, 1→4→4,
+log-only vs block) → Audit Export (45s: scroll the pack, read the scope
+statement, "this is what you hand the security review"). Skip Work Log and
+Cost Dashboard; both are one-liners over your shoulder if asked.
 
 ## The one-sentence positioning
 
