@@ -10,6 +10,8 @@ from the YouTube Data API v3, and scores every game on primary YouTube data (not
                their own subscriber count (proof a small channel can rank for this game)
   concentration share of views captured by the top 3 channels (low = not locked up)
   english share share of views on English-audio videos (a proxy for higher ad RPM)
+  long-form    the same demand and small-win checks restricted to 8+ minute videos, because
+               Shorts earn ~$0.02-0.08 RPM and can make a game look lucrative when it is not
 
 Stdlib only. Needs YOUTUBE_API_KEY in the environment (free key from Google Cloud Console).
 Quota: ~102 units per game (search.list = 100, videos.list + channels.list = 1 each per 50 ids).
@@ -39,6 +41,7 @@ from typing import Callable
 API = "https://www.googleapis.com/youtube/v3/"
 QUOTA_COST = {"search": 100, "videos": 1, "channels": 1}
 SHORT_MAX_SECONDS = 180
+LONGFORM_MIN_SECONDS = 480  # 8+ minutes: eligible for mid-roll ads, where ad revenue actually is
 
 HERE = Path(__file__).resolve().parent
 
@@ -162,13 +165,18 @@ class GameResult:
     shorts_view_share: float = 0.0
     english_share: float = 0.0
     best_small_video: str = ""
+    lf_videos: int = 0
+    lf_median_vpd: float = 0.0
+    lf_small_wins: int = 0
+    best_small_longform: str = ""
     score: float = 0.0
     notes: list[str] = field(default_factory=list)
 
 
 def scan_game(fetch: Fetcher, name: str, query: str, pattern: str, *, days: int,
               region: str, lang: str, small_cap: int, now: dt.datetime) -> tuple[GameResult, list[Video]]:
-    after = (now - dt.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Day-aligned so the request (and its cache key) is identical for every run on the same UTC day.
+    after = (now - dt.timedelta(days=days)).strftime("%Y-%m-%dT00:00:00Z")
     search = fetch("search", {
         "part": "snippet", "type": "video", "q": query, "order": "viewCount",
         "publishedAfter": after, "maxResults": 50, "regionCode": region,
@@ -229,12 +237,25 @@ def summarise(result: GameResult, videos: list[Video], *, now: dt.datetime,
     else:
         result.notes.append("no top uploads in the last 7 days")
 
-    small_wins = [v for v in videos if v.channel_subs < small_cap and v.views >= max(v.channel_subs, 1)]
+    def is_small_win(v: Video) -> bool:
+        return v.channel_subs < small_cap and v.views >= max(v.channel_subs, 1)
+
+    def describe(v: Video) -> str:
+        return f"{v.views:,} views / {v.channel_subs:,} subs: {v.channel_title} - https://youtu.be/{v.id}"
+
+    small_wins = [v for v in videos if is_small_win(v)]
     result.small_win_rate = len(small_wins) / len(videos)
     if small_wins:
-        best = max(small_wins, key=lambda v: v.views)
-        result.best_small_video = (f"{best.views:,} views / {best.channel_subs:,} subs: "
-                                   f"{best.channel_title} - https://youtu.be/{best.id}")
+        result.best_small_video = describe(max(small_wins, key=lambda v: v.views))
+
+    longform = [v for v in videos if v.seconds >= LONGFORM_MIN_SECONDS]
+    result.lf_videos = len(longform)
+    if longform:
+        result.lf_median_vpd = statistics.median(v.views_per_day(now) for v in longform)
+        lf_wins = [v for v in longform if is_small_win(v)]
+        result.lf_small_wins = len(lf_wins)
+        if lf_wins:
+            result.best_small_longform = describe(max(lf_wins, key=lambda v: v.views))
 
     by_channel: dict[str, int] = {}
     for v in videos:
@@ -280,7 +301,8 @@ def score(results: list[GameResult]) -> None:
 # ---------------------------------------------------------------------------
 
 COLUMNS = ["game", "score", "videos", "total_views", "median_vpd", "momentum", "small_win_rate",
-           "top3_share", "shorts_view_share", "english_share", "best_small_video", "notes"]
+           "top3_share", "shorts_view_share", "english_share", "best_small_video",
+           "lf_videos", "lf_median_vpd", "lf_small_wins", "best_small_longform", "notes"]
 
 
 def write_outputs(results: list[GameResult], out_dir: Path, *, days: int, quota_used: int) -> Path:
@@ -307,13 +329,22 @@ def write_outputs(results: list[GameResult], out_dir: Path, *, days: int, quota_
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for i, r in enumerate(ranked, 1):
-        lines.append(f"| {i} | {r.game} | {r.score} | {r.median_vpd:,.0f} | {r.momentum:.2f}x | "
+        momentum = f"{r.momentum:.2f}x" if r.momentum else "n/a"
+        lines.append(f"| {i} | {r.game} | {r.score} | {r.median_vpd:,.0f} | {momentum} | "
                      f"{r.small_win_rate:.0%} | {r.top3_share:.0%} | {r.shorts_view_share:.0%} | "
                      f"{r.english_share:.0%} | {r.videos} |")
+    lines += ["", "## Long-form only (8+ min, where ad revenue is)", "",
+              "Sorted by small-channel long-form wins, then median views/day.", "",
+              "| Game | Long-form videos in top 50 | Median views/day | Small-channel wins |",
+              "|---|---|---|---|"]
+    for r in sorted(results, key=lambda r: (r.lf_small_wins, r.lf_median_vpd), reverse=True):
+        lines.append(f"| {r.game} | {r.lf_videos} | {r.lf_median_vpd:,.0f} | {r.lf_small_wins} |")
     lines += ["", "## Proof a small channel can win (best example per game)", ""]
     for r in ranked:
         if r.best_small_video:
             lines.append(f"- **{r.game}**: {r.best_small_video}")
+        if r.best_small_longform:
+            lines.append(f"  - long-form: {r.best_small_longform}")
     md_path.write_text("\n".join(lines) + "\n")
     return md_path
 
@@ -330,7 +361,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", type=Path, default=HERE / "output")
     p.add_argument("--cache", type=Path, default=HERE / ".cache")
     p.add_argument("--dump-videos", action="store_true", help="also write every video row to JSON")
+    p.add_argument("--from-dump", type=Path,
+                   help="re-analyse a videos.json written by --dump-videos; no API key or quota needed")
     args = p.parse_args(argv)
+
+    if args.from_dump:
+        now = dt.datetime.fromtimestamp(args.from_dump.stat().st_mtime, dt.timezone.utc)
+        results = []
+        for name, rows in json.loads(args.from_dump.read_text()).items():
+            vids = [Video(**{**row, "published": parse_time(row["published"])}) for row in rows]
+            results.append(summarise(GameResult(game=name), vids, now=now,
+                                     small_cap=args.small_cap, days=args.days))
+        score(results)
+        md = write_outputs(results, args.out, days=args.days, quota_used=0)
+        print(md.read_text())
+        return 0
 
     key = os.environ.get("YOUTUBE_API_KEY")
     if not key:

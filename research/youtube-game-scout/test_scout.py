@@ -96,6 +96,10 @@ class ScanTest(unittest.TestCase):
         self.assertAlmostEqual(r.english_share, 0.85)
         # fresh (2 days, 100K/day) vs older median vpd -> momentum well above 1
         self.assertGreater(r.momentum, 1.0)
+        # long-form excludes the 30s Short; only the small channel's video is a long-form small win
+        self.assertEqual(r.lf_videos, 3)
+        self.assertEqual(r.lf_small_wins, 1)
+        self.assertIn("5,000 subs", r.best_small_longform)
 
     def test_hidden_subscribers_never_count_as_small(self):
         videos = [{"id": "a", "title": "Valheim run", "ch": "hid", "days_ago": 3, "views": 50_000}]
@@ -132,7 +136,37 @@ class ScanTest(unittest.TestCase):
             md = scout.write_outputs([r], Path(d), days=30, quota_used=102)
             text = md.read_text()
             self.assertIn("| 1 | Valheim | 50.0 |", text)
+            self.assertIn("## Long-form only", text)
+            self.assertIn("| Valheim | 0 | 0 | 0 |", text)
             self.assertTrue(list(Path(d).glob("*.csv")))
+
+
+class DumpTest(unittest.TestCase):
+    def test_from_dump_roundtrip_needs_no_key(self):
+        import json, os
+        v = scout.Video("a", "Valheim guide", "c", "C", NOW - dt.timedelta(days=3), 5000, 900, "en", 1000)
+        row = {**scout.asdict(v), "published": v.published.isoformat()}
+        with tempfile.TemporaryDirectory() as d:
+            dump = Path(d) / "videos.json"
+            dump.write_text(json.dumps({"Valheim": [row]}))
+            os.environ.pop("YOUTUBE_API_KEY", None)
+            self.assertEqual(scout.main(["--from-dump", str(dump), "--out", d]), 0)
+            text = next(Path(d).glob("scout-*.md")).read_text()
+        self.assertIn("| Valheim | 1 |", text)
+
+
+class CacheKeyTest(unittest.TestCase):
+    def test_search_window_is_day_aligned(self):
+        seen = []
+
+        def fetch(endpoint, params):
+            seen.append(params.get("publishedAfter"))
+            return {"items": []}
+
+        for minute in (1, 59):
+            scout.scan_game(fetch, "X", "X", "x", days=30, region="US", lang="en", small_cap=1,
+                            now=NOW.replace(hour=5, minute=minute))
+        self.assertEqual(seen, ["2026-08-29T00:00:00Z"] * 2)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ For every game in `games.txt` it pulls the 50 most-viewed uploads from the last 
 | Top-3 share | Share of views captured by the 3 biggest channels. High = locked up by big creators |
 | Shorts share | How much of the demand is Shorts (RPM ~$0.02-0.08) vs long-form |
 | English share | Views on English-audio videos. Proxy for higher ad RPM |
+| Long-form (8+ min) | Same demand and small-win checks on mid-roll-eligible videos only. **Use this table for earning decisions**: the composite score leans toward Shorts virality, and Shorts pay ~$0.02-0.08 RPM |
 
 **Score** (0-100, relative to the other games in the same run):
 30% demand, 25% small-channel wins, 20% momentum, 15% open field, 10% English share.
@@ -26,6 +27,7 @@ export YOUTUBE_API_KEY=...   # console.cloud.google.com → enable "YouTube Data
 python3 scout.py                    # all games in games.txt
 python3 scout.py --limit 5          # quick test on the first 5
 python3 scout.py --days 14 --small-cap 50000 --dump-videos
+python3 scout.py --from-dump output/videos.json   # re-analyse saved data, no key or quota
 python3 -m unittest test_scout.py   # offline tests, no key needed
 ```
 
@@ -34,8 +36,10 @@ so you can study what worked).
 
 ## Limits (read before trusting a number)
 
-- **Quota:** each game costs ~102 of the free 10,000 daily units, so ~95 games a day. Responses are cached
-  per day in `.cache/`, so re-running is free.
+- **Quota:** each game costs ~102 of the free 10,000 daily units. Projects can also have a separate
+  "Search Queries per day" cap that hits first (one run of 49 games hit it on a shared project). Responses are
+  cached per UTC day in `.cache/`, so re-running the same day is free; use `--dump-videos` then `--from-dump`
+  to re-analyse without any API calls.
 - **Top-50 sample:** search returns at most 50 videos per query, so this measures the head of demand, not
   every upload. Games with huge volume (Minecraft, Roblox) are under-counted, which is fine for finding
   mid-tier openings.
