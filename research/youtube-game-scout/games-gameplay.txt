@@ -1,0 +1,27 @@
+# Gameplay-only format check: same games, but the search asks YouTube for plain gameplay /
+# no-commentary videos, so the top-50 sample shows how that format performs (the default
+# list's top 50 is dominated by personality and edited content).
+# Name | search query | title regex
+
+Valheim | Valheim gameplay no commentary | valheim
+ARC Raiders | ARC Raiders gameplay no commentary | arc raiders
+WARDOGS | WARDOGS gameplay no commentary | wardogs
+Where Winds Meet | Where Winds Meet gameplay no commentary | where winds meet
+Elden Ring Nightreign | Nightreign gameplay no commentary | nightreign
+Crimson Desert | Crimson Desert gameplay no commentary | crimson desert
+Assassin's Creed Black Flag Resynced | Black Flag Resynced gameplay walkthrough no commentary | black flag
+Marvel's Wolverine | Marvel's Wolverine gameplay walkthrough no commentary | wolverine
+Resident Evil Requiem | Resident Evil Requiem gameplay walkthrough no commentary | (resident evil requiem|re requiem|re9)
+007 First Light | 007 First Light gameplay walkthrough no commentary | 007 first light
+Silent Hill f | Silent Hill f gameplay walkthrough no commentary | silent hill f\b
+Subnautica 2 | Subnautica 2 gameplay no commentary | subnautica (2|ii)
+Hytale | Hytale gameplay no commentary | hytale
+Escape from Tarkov | Escape from Tarkov gameplay no commentary | tarkov
+Planet Zoo 2 | Planet Zoo 2 gameplay | planet zoo (2|ii)
+Supermarket Simulator | Supermarket Simulator gameplay no commentary | supermarket simulator
+Schedule I | Schedule 1 gameplay no commentary | schedule (1|i)\b
+Gears of War E-Day | Gears of War E-Day gameplay | e-?day
+Call of Duty Modern Warfare 4 | Modern Warfare 4 campaign gameplay no commentary | (modern warfare 4|mw4)
+GTA 5 | GTA 5 gameplay no commentary | (gta (5|v)\b|gta online)
+Minecraft | Minecraft gameplay no commentary | minecraft
+Battlefield 6 | Battlefield 6 gameplay no commentary | (battlefield 6|bf6)
