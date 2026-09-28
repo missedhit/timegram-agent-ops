@@ -1,0 +1,61 @@
+# One game per line:  Name  |  search query (optional)  |  title regex (optional)
+# Default query = the name; default filter = every word of the name must appear in the title.
+# Seed list mixes mid-tier titles with possible momentum (the thing we are hunting for)
+# with a few giants as a baseline. Edit freely.
+
+# --- Rising / recent releases ---
+WARDOGS
+Slay the Spire 2 | Slay the Spire 2 | slay the spire (2|ii)
+Valheim
+Shift at Midnight
+Meccha Chameleon
+Marvel's Wolverine | Marvel's Wolverine | wolverine
+Assassin's Creed Black Flag Resynced | Black Flag Resynced | black flag
+Pokemon Pokopia | Pokopia | pokopia
+Pokemon Champions | Pokemon Champions | pok[eé]mon champions
+Hytale
+Resident Evil Requiem | Resident Evil Requiem | (resident evil requiem|re requiem|re9)
+Crimson Desert
+Subnautica 2 | Subnautica 2 | subnautica (2|ii)
+Silent Hill f | Silent Hill f | silent hill f\b
+Retro Rewind | Retro Rewind video store simulator | retro rewind
+Supermarket Simulator
+Planet Zoo 2 | Planet Zoo 2 | planet zoo (2|ii)
+007 First Light
+Hollow Knight Silksong | Silksong | silksong
+Elden Ring Nightreign | Nightreign | nightreign
+The Isle | The Isle game dinosaur | \bthe isle\b
+Schedule I | Schedule 1 game | schedule (1|i)\b
+REPO | R.E.P.O. game | r\.?e\.?p\.?o\b
+PEAK | PEAK game climbing | \bpeak\b
+
+# --- Q4 2026 tentpoles (pre-launch hype) ---
+GTA 6 | GTA 6 | (gta (6|vi)|grand theft auto (6|vi))
+Call of Duty Modern Warfare 4 | Modern Warfare 4 | (modern warfare 4|mw4)
+Gears of War E-Day | Gears of War E-Day | e-?day
+EA FC 27 | EA FC 27 | (fc ?27|fifa ?27)
+NBA 2K27 | NBA 2K27 | 2k27
+
+# --- Established, check if still growing ---
+ARC Raiders
+Marvel Rivals
+Escape from Tarkov | Escape from Tarkov | tarkov
+Battlefield 6 | Battlefield 6 | (battlefield 6|bf6)
+Deadlock | Deadlock valve | \bdeadlock\b
+Where Winds Meet
+Delta Force | Delta Force game | delta force
+Football Manager 26 | Football Manager 26 | (football manager 26|fm26|fm 26)
+Monster Hunter Wilds | Monster Hunter Wilds | mh ?wilds|monster hunter wilds
+Phasmophobia
+Dead by Daylight | Dead by Daylight | (dead by daylight|dbd)
+Brawl Stars
+Clash Royale
+Valorant
+Counter-Strike 2 | CS2 | (cs2|counter-?strike)
+
+# --- Giants (baseline, usually saturated) ---
+GTA 5 | GTA 5 | (gta (5|v)\b|gta online)
+Minecraft
+Roblox
+Fortnite
+League of Legends | League of Legends | (league of legends|\blol\b)
